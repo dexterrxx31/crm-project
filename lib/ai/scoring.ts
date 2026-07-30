@@ -20,7 +20,7 @@ import { getDeal, getLead } from "@/lib/queries/crm";
  * next run than to add fallback-routing complexity here.
  */
 
-const scoreOutputSchema = z.object({
+export const scoreOutputSchema = z.object({
   score: z.number().int().min(0).max(100),
   reasoning: z.string().min(1).max(2000),
   nextAction: z.string().min(1).max(500),

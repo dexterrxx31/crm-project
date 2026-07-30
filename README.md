@@ -98,8 +98,8 @@ Resend, Upstash, Sentry or PostHog are similarly optional in development.
 | `bun run db:reset` | Drop, recreate, migrate and seed |
 | `bun run db:studio` | Drizzle Studio |
 | `bun run inngest:dev` | Inngest dev server |
-| `bun run test` | Vitest |
-| `bun run test:e2e` | Playwright |
+| `bun run test` / `test:watch` | Vitest |
+| `bun run test:e2e` | Playwright (builds and starts its own server) |
 
 ## Layout
 
@@ -118,6 +118,47 @@ lib/
   email/           React Email templates
 tests/             unit (Vitest) and e2e (Playwright)
 ```
+
+## Tests and CI
+
+- `bun run test` — Vitest, for validators, the scoring output schema, and the `tenantDb` RLS
+  helper. No database needed; `tests/setup.ts` fills in a placeholder `DATABASE_URL` so
+  modules that build a (lazy, unconnected) Postgres client at import time don't throw.
+- `bun run test:e2e` — Playwright. One golden-path spec: sign up → create an account → create
+  a contact → create a deal → drag it to another stage on the board → ask the agent chat a
+  question. `playwright.config.ts` builds and starts a production server itself, so this needs
+  a real, migrated Postgres (`bun run db:up && bun run db:migrate` first). The agent step
+  asserts the chat pipeline degrades to a clear "not configured" message — it doesn't require
+  `ANTHROPIC_API_KEY`, matching every other AI path in this app.
+- `.github/workflows/ci.yml` runs typecheck, Biome, Vitest and Playwright on every push and PR,
+  against a `pgvector/pgvector:pg17` service container it migrates from scratch. All AI,
+  rate-limiting and observability env vars are left unset in CI on purpose — that's the
+  condition the degrade-gracefully behavior above is supposed to hold under.
+
+## Deploying
+
+Vercel (app) + Neon (Postgres). Both are zero-config for a standard Next.js app; the parts
+that need attention are specific to this project:
+
+1. **Neon**: create a project — enabling the `pgvector` extension is not a separate manual
+   step, `bun run db:migrate` runs `CREATE EXTENSION IF NOT EXISTS vector` itself. Copy Neon's
+   **pooled** connection string for `DATABASE_URL` and its **direct** (unpooled) connection
+   string for `DATABASE_ADMIN_URL` — migrations run DDL and a role-bypass-RLS check that
+   should not go through a transaction pooler.
+2. **Run migrations once against Neon** before the first deploy (and after any schema
+   change): `DATABASE_ADMIN_URL=... DATABASE_URL=... bun run db:migrate` from a machine that
+   can reach Neon. Vercel's build step does not run this for you.
+3. **Vercel**: import the repo — bun is auto-detected from `bun.lock`, build command is the
+   default `next build`. Set every var from `.env.example` that applies: `DATABASE_URL`,
+   `DATABASE_ADMIN_URL` (only needed where you run migrations from, not on Vercel itself),
+   `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (your production origin), plus whichever of the
+   optional AI/Resend/Upstash/Sentry/PostHog/Inngest keys you're using — all of them are
+   optional at runtime (see "Without API keys" above).
+4. **Inngest**: in production, `INNGEST_DEV` must be unset. Register the app at
+   inngest.com pointing at `https://<your-domain>/api/inngest` and set
+   `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` — without them the route responds in "cloud mode"
+   and rejects sync/invocation requests (see "Background jobs" above; the same failure mode
+   that motivated `proxy.ts` excluding this route from the auth-cookie check).
 
 ## Multi-tenancy
 
