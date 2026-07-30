@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { accounts } from "@/lib/db/schema";
+import { notify } from "@/lib/inngest/client";
 import { orgAction } from "@/lib/safe-action";
 import {
   createAccountSchema,
@@ -33,6 +34,12 @@ export const createAccount = orgAction
       return row;
     });
 
+    await notify("embedding/source.changed", {
+      organizationId: ctx.organizationId,
+      sourceType: "account",
+      sourceId: account.id,
+    });
+
     revalidatePath("/accounts");
     return { id: account.id };
   });
@@ -60,6 +67,12 @@ export const updateAccount = orgAction
         before,
         after,
       });
+    });
+
+    await notify("embedding/source.changed", {
+      organizationId: ctx.organizationId,
+      sourceType: "account",
+      sourceId: id,
     });
 
     revalidatePath("/accounts");

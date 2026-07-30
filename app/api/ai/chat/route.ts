@@ -4,6 +4,7 @@ import { runAgent } from "@/lib/ai/agent";
 import { AiNotConfiguredError } from "@/lib/ai/client";
 import { sseResponse } from "@/lib/ai/sse";
 import { requireOrgContext } from "@/lib/auth-context";
+import { checkAiRateLimit } from "@/lib/rate-limit";
 import { chatRequestSchema } from "@/lib/validators/ai";
 
 /**
@@ -16,6 +17,14 @@ export async function POST(request: Request) {
   const context = await requireOrgContext().catch(() => null);
   if (!context) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
+  const rateLimit = await checkAiRateLimit(context.organizationId);
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment and try again." },
+      { status: 429 },
+    );
   }
 
   const body = await request.json().catch(() => null);

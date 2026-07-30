@@ -25,3 +25,24 @@ export type Events = {
 };
 
 export const inngest = new Inngest({ id: "synapse-crm" });
+
+/**
+ * Fire-and-forget event send, for calling from Server Actions.
+ *
+ * Local dev is two processes — `bun dev` and `bun run inngest:dev` — and
+ * it's easy to only run the first. `inngest.send()` would then fail (no
+ * dev server to receive it); embedding and scoring staying in sync is a
+ * nice-to-have, not something that should ever break saving a contact. This
+ * swallows that failure (logged, not thrown) rather than letting it
+ * propagate into the calling action's result.
+ */
+export async function notify<K extends keyof Events>(
+  name: K,
+  data: Events[K]["data"],
+): Promise<void> {
+  try {
+    await inngest.send({ name, data });
+  } catch (error) {
+    console.warn(`[inngest] failed to send "${name}" — is the Inngest dev server running?`, error);
+  }
+}

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { PosthogIdentify } from "@/components/analytics/posthog-identify";
 import { AiChat } from "@/components/crm/ai-chat";
 import { AppNav } from "@/components/crm/app-nav";
 import { UserMenu } from "@/components/crm/user-menu";
@@ -14,6 +15,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <TooltipProvider>
+      <PosthogIdentify
+        userId={context.userId}
+        userEmail={context.userEmail}
+        organizationId={context.organizationId}
+        organizationName={context.organizationName}
+      />
       <div className="flex flex-1">
         <aside className="hidden w-60 shrink-0 flex-col justify-between border-r bg-sidebar p-3 md:flex">
           <div>

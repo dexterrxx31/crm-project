@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { deals, pipelines, stages } from "@/lib/db/schema";
 import type { TenantTx } from "@/lib/db/tenant";
+import { notify } from "@/lib/inngest/client";
+import { publishDealBoardEvent } from "@/lib/realtime";
 import { orgAction } from "@/lib/safe-action";
 import {
   closeDealSchema,
@@ -59,6 +61,13 @@ export const createDeal = orgAction
       return row;
     });
 
+    await notify("embedding/source.changed", {
+      organizationId: ctx.organizationId,
+      sourceType: "deal",
+      sourceId: deal.id,
+    });
+    await notify("deal/scoring.requested", { organizationId: ctx.organizationId, dealId: deal.id });
+
     revalidatePath("/deals");
     revalidatePath("/dashboard");
     return { id: deal.id };
@@ -92,6 +101,13 @@ export const updateDeal = orgAction
         after,
       });
     });
+
+    await notify("embedding/source.changed", {
+      organizationId: ctx.organizationId,
+      sourceType: "deal",
+      sourceId: id,
+    });
+    await notify("deal/scoring.requested", { organizationId: ctx.organizationId, dealId: id });
 
     revalidatePath("/deals");
     revalidatePath(`/deals/${id}`);
@@ -128,6 +144,12 @@ export const moveDeal = orgAction
       });
     });
 
+    await publishDealBoardEvent(ctx.organizationId, {
+      type: "deal.moved",
+      dealId: parsedInput.id,
+      stageId: parsedInput.stageId,
+    });
+
     revalidatePath("/deals");
     revalidatePath("/dashboard");
     return { id: parsedInput.id, stageId: parsedInput.stageId };
@@ -162,6 +184,11 @@ export const closeDeal = orgAction
       });
     });
 
+    await publishDealBoardEvent(ctx.organizationId, {
+      type: "deal.closed",
+      dealId: parsedInput.id,
+    });
+
     revalidatePath("/deals");
     revalidatePath(`/deals/${parsedInput.id}`);
     revalidatePath("/dashboard");
@@ -186,6 +213,11 @@ export const deleteDeal = orgAction
         entityId: parsedInput.id,
         before,
       });
+    });
+
+    await publishDealBoardEvent(ctx.organizationId, {
+      type: "deal.deleted",
+      dealId: parsedInput.id,
     });
 
     revalidatePath("/deals");

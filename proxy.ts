@@ -32,8 +32,12 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except Next internals, the auth handler itself, and static files.
+  // Everything except Next internals, static files, the auth handler, and the
+  // Inngest webhook — the latter is called by Inngest's own infrastructure
+  // (sync, invocation) with no user session; its security boundary is
+  // INNGEST_SIGNING_KEY, verified inside the route handler, not this cookie
+  // check.
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/auth|api/inngest|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

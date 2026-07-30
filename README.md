@@ -18,6 +18,8 @@ timeline — plus a Claude agent that can read and act on all of it.
 | Realtime | Postgres `LISTEN/NOTIFY` → SSE |
 | Email | Resend + React Email |
 | AI | `@anthropic-ai/sdk` (`claude-opus-5`), Voyage embeddings in pgvector |
+| Rate limiting | Upstash Redis (sliding window, per-org, on `/api/ai/*`) |
+| Observability | Sentry (errors), PostHog (product analytics) |
 
 ## Getting started
 
@@ -59,6 +61,20 @@ ssh -F ~/.colima/ssh_config -f -N -L 5433:127.0.0.1:5433 colima
 That lasts until the VM restarts. For a permanent fix, restart Colima with a host-reachable
 address (`colima stop && colima start --network-address`) and point `DATABASE_URL` at the IP
 shown by `colima list`. Docker Desktop users are unaffected.
+
+### Background jobs (Inngest)
+
+Scoring, embedding and the nightly sweep run through Inngest, which is a second local
+process:
+
+```bash
+bun run inngest:dev            # http://localhost:8288 — discovers functions from /api/inngest
+```
+
+`INNGEST_DEV=1` (set by default in `.env.example`) tells the SDK to talk to this local dev
+server instead of Inngest Cloud — without it, `/api/inngest` responds in "cloud mode" and
+rejects requests for lack of a signing key. Unset it (or set to `0`) in production, where
+`INNGEST_SIGNING_KEY` takes over.
 
 ### Without API keys
 

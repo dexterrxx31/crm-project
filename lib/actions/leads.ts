@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { accounts, contacts, deals, leads, pipelines, stages } from "@/lib/db/schema";
+import { notify } from "@/lib/inngest/client";
 import { orgAction } from "@/lib/safe-action";
 import {
   convertLeadSchema,
@@ -34,6 +35,8 @@ export const createLead = orgAction
       return row;
     });
 
+    await notify("lead/scoring.requested", { organizationId: ctx.organizationId, leadId: lead.id });
+
     revalidatePath("/leads");
     return { id: lead.id };
   });
@@ -60,6 +63,8 @@ export const updateLead = orgAction
         after,
       });
     });
+
+    await notify("lead/scoring.requested", { organizationId: ctx.organizationId, leadId: id });
 
     revalidatePath("/leads");
     revalidatePath(`/leads/${id}`);
@@ -202,6 +207,23 @@ export const convertLead = orgAction
 
       return { accountId: account.id, contactId: contact.id, dealId };
     });
+
+    await notify("embedding/source.changed", {
+      organizationId: ctx.organizationId,
+      sourceType: "contact",
+      sourceId: result.contactId,
+    });
+    if (result.dealId) {
+      await notify("embedding/source.changed", {
+        organizationId: ctx.organizationId,
+        sourceType: "deal",
+        sourceId: result.dealId,
+      });
+      await notify("deal/scoring.requested", {
+        organizationId: ctx.organizationId,
+        dealId: result.dealId,
+      });
+    }
 
     revalidatePath("/leads");
     revalidatePath("/contacts");

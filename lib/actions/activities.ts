@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { activities } from "@/lib/db/schema";
+import { notify } from "@/lib/inngest/client";
 import { orgAction } from "@/lib/safe-action";
 import {
   createActivitySchema,
@@ -16,6 +17,19 @@ import {
 function revalidateSubject(relatedType: string, relatedId: string) {
   revalidatePath("/activities");
   revalidatePath(`/${relatedType}s/${relatedId}`);
+}
+
+/** A logged call/meeting/note is scoring signal for the lead or deal it's on. */
+async function notifyRelatedScoring(
+  organizationId: string,
+  relatedType: string,
+  relatedId: string,
+) {
+  if (relatedType === "lead") {
+    await notify("lead/scoring.requested", { organizationId, leadId: relatedId });
+  } else if (relatedType === "deal") {
+    await notify("deal/scoring.requested", { organizationId, dealId: relatedId });
+  }
 }
 
 export const createActivity = orgAction
@@ -39,6 +53,13 @@ export const createActivity = orgAction
 
       return row;
     });
+
+    await notify("embedding/source.changed", {
+      organizationId: ctx.organizationId,
+      sourceType: "activity",
+      sourceId: activity.id,
+    });
+    await notifyRelatedScoring(ctx.organizationId, parsedInput.relatedType, parsedInput.relatedId);
 
     revalidateSubject(parsedInput.relatedType, parsedInput.relatedId);
     return { id: activity.id };

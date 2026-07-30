@@ -42,6 +42,20 @@ const serverSchema = z.object({
   SENTRY_DSN: optionalString,
 });
 
+/**
+ * Client-side environment. `NEXT_PUBLIC_*` vars are inlined into the bundle
+ * at build time, so this schema only documents the shape — it isn't a gate
+ * that can hide the value at runtime the way `serverSchema` hides secrets.
+ */
+const clientSchema = z.object({
+  NEXT_PUBLIC_POSTHOG_KEY: optionalString,
+  NEXT_PUBLIC_POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
+  // Sentry DSNs aren't secret (they only accept writes, scoped to one
+  // project) — the wizard-standard setup exposes the same value under both
+  // this and `SENTRY_DSN` so client and server error capture share one DSN.
+  NEXT_PUBLIC_SENTRY_DSN: optionalString,
+});
+
 export type ServerEnv = z.infer<typeof serverSchema>;
 
 let cached: ServerEnv | undefined;
@@ -74,4 +88,25 @@ export function hasAnthropicKey(): boolean {
 /** True when the Voyage key is configured; embedding jobs no-op without it. */
 export function hasVoyageKey(): boolean {
   return Boolean(process.env.VOYAGE_API_KEY);
+}
+
+/** True when Sentry is configured; `instrumentation.ts` skips `Sentry.init` without it. */
+export function hasSentryDsn(): boolean {
+  return Boolean(process.env.SENTRY_DSN);
+}
+
+let cachedClientEnv: z.infer<typeof clientSchema> | undefined;
+
+/**
+ * Parsed client env, safe to call from `"use client"` code — reads only the
+ * `NEXT_PUBLIC_*` vars Next.js inlines into the browser bundle.
+ */
+export function clientEnv(): z.infer<typeof clientSchema> {
+  if (cachedClientEnv) return cachedClientEnv;
+  cachedClientEnv = clientSchema.parse({
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  });
+  return cachedClientEnv;
 }

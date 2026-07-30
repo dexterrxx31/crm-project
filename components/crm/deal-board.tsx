@@ -14,7 +14,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { moveDeal } from "@/lib/actions/deals";
@@ -42,6 +42,33 @@ export function DealBoard({
   const router = useRouter();
   const [dealsByStage, setDealsByStage] = useState(initialDealsByStage);
   const [dragging, setDragging] = useState<BoardDeal | null>(null);
+
+  // `useState(initialDealsByStage)` only seeds the first render — without this,
+  // a `router.refresh()` (ours after a move, or the realtime listener below
+  // after someone else's) fetches fresh server props that never reach local
+  // state, and the board silently stops reflecting reality.
+  useEffect(() => {
+    setDealsByStage(initialDealsByStage);
+  }, [initialDealsByStage]);
+
+  // Realtime sync: another tab or teammate moving/closing a deal calls
+  // publishDealBoardEvent server-side (see lib/actions/deals.ts); this
+  // listens on the SSE channel and refreshes so this board picks it up too.
+  useEffect(() => {
+    const source = new EventSource("/api/events");
+    source.onmessage = (event) => {
+      if (!event.data || event.data.startsWith(":")) return;
+      try {
+        const payload = JSON.parse(event.data);
+        if (typeof payload.type === "string" && payload.type.startsWith("deal.")) {
+          router.refresh();
+        }
+      } catch {
+        // Not JSON (e.g. a stray comment/heartbeat line) — ignore.
+      }
+    };
+    return () => source.close();
+  }, [router]);
 
   // Require a small drag distance so clicking a card still navigates.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
