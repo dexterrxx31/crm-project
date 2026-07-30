@@ -1,0 +1,25 @@
+services:
+  postgres:
+    # pgvector image so the `vector` extension is available for semantic search
+    image: pgvector/pgvector:pg17
+    container_name: synapse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: synapse
+      POSTGRES_DB: synapse
+    ports:
+      # 5433 on the host so this never collides with a local Postgres on 5432.
+      # Bound explicitly to 127.0.0.1: Colima/Lima forwards loopback binds to the
+      # host reliably, whereas a bare "5433:5432" binds 0.0.0.0 inside the VM only.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - synapse-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse -d synapse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  synapse-pgdata:
