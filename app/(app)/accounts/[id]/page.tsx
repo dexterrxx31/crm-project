@@ -5,6 +5,7 @@ import { ACCOUNT_FIELDS } from "@/components/crm/field-definitions";
 import { LogActivityDialog } from "@/components/crm/log-activity-dialog";
 import { PageHeader } from "@/components/crm/page-header";
 import { RecordFormDialog } from "@/components/crm/record-form-dialog";
+import { SummarizeAccountDialog } from "@/components/crm/summarize-dialog";
 import { Timeline } from "@/components/crm/timeline";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ export default async function AccountDetailPage({
         description={[account.industry, account.domain].filter(Boolean).join(" · ") || undefined}
         actions={
           <>
+            <SummarizeAccountDialog accountId={account.id} />
             <LogActivityDialog relatedType="account" relatedId={account.id} />
             <RecordFormDialog
               title="Edit account"

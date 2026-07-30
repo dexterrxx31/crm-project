@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { DraftEmailDialog } from "@/components/crm/draft-email-dialog";
 import { contactFields } from "@/components/crm/field-definitions";
 import { LogActivityDialog } from "@/components/crm/log-activity-dialog";
 import { PageHeader } from "@/components/crm/page-header";
 import { RecordFormDialog } from "@/components/crm/record-form-dialog";
+import { SummarizeContactDialog } from "@/components/crm/summarize-dialog";
 import { Timeline } from "@/components/crm/timeline";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +38,8 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         description={[contact.title, accountName].filter(Boolean).join(" · ") || undefined}
         actions={
           <>
+            <SummarizeContactDialog contactId={contact.id} />
+            <DraftEmailDialog contactId={contact.id} hasEmail={Boolean(contact.email)} />
             <LogActivityDialog relatedType="contact" relatedId={contact.id} />
             <RecordFormDialog
               title="Edit contact"

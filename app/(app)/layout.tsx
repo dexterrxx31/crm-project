@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AiChat } from "@/components/crm/ai-chat";
 import { AppNav } from "@/components/crm/app-nav";
 import { UserMenu } from "@/components/crm/user-menu";
 import { Toaster } from "@/components/ui/sonner";
@@ -22,11 +23,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
             <AppNav />
           </div>
-          <UserMenu
-            name={context.userName}
-            email={context.userEmail}
-            organizationName={context.organizationName}
-          />
+          <div className="flex flex-col gap-3">
+            <AiChat />
+            <UserMenu
+              name={context.userName}
+              email={context.userEmail}
+              organizationName={context.organizationName}
+            />
+          </div>
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col">{children}</main>

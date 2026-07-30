@@ -99,7 +99,17 @@ export function DataTable<TData>({
             table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
-                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                onClick={
+                  onRowClick
+                    ? (event) => {
+                        // Cells with their own interactive content (a dialog trigger, a
+                        // nested link) mark themselves data-stop-row-click to opt out,
+                        // rather than every such cell reaching for stopPropagation.
+                        if ((event.target as HTMLElement).closest("[data-stop-row-click]")) return;
+                        onRowClick(row.original);
+                      }
+                    : undefined
+                }
                 className={cn(onRowClick && "cursor-pointer")}
               >
                 {row.getVisibleCells().map((cell) => (

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { AiInsightCard } from "@/components/crm/ai-insight-card";
 import { CloseDealDialog } from "@/components/crm/close-deal-dialog";
 import { dealFields } from "@/components/crm/field-definitions";
 import { LogActivityDialog } from "@/components/crm/log-activity-dialog";
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateDeal } from "@/lib/actions/deals";
+import { latestInsight } from "@/lib/ai/scoring";
 import { getOrgContext } from "@/lib/auth-context";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { formOptions, getDeal } from "@/lib/queries/crm";
@@ -22,9 +24,10 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
   if (!context) redirect("/login");
 
   const { id } = await params;
-  const [data, options] = await Promise.all([
+  const [data, options, insight] = await Promise.all([
     getDeal(context.organizationId, id),
     formOptions(context.organizationId),
+    latestInsight(context.organizationId, "deal", id, "deal_health"),
   ]);
   if (!data) notFound();
 
@@ -75,6 +78,10 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
         </div>
 
         <div className="flex flex-col gap-4">
+          {deal.status === "open" ? (
+            <AiInsightCard subject="deal" subjectId={deal.id} insight={insight} />
+          ) : null}
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Deal</CardTitle>

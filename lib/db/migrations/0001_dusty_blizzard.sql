@@ -1,0 +1,1 @@
+ALTER TYPE "public"."subject_type" ADD VALUE 'activity';

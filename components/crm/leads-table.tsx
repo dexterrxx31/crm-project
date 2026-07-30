@@ -1,6 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { ConvertLeadDialog } from "@/components/crm/convert-lead-dialog";
 import { DataTable } from "@/components/crm/data-table";
@@ -27,6 +28,7 @@ const STATUS_VARIANT = {
 } as const;
 
 export function LeadsTable({ rows }: { rows: LeadRow[] }) {
+  const router = useRouter();
   const columns = useMemo<ColumnDef<LeadRow, unknown>[]>(
     () => [
       {
@@ -72,16 +74,26 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
         id: "actions",
         header: "",
         enableSorting: false,
-        cell: ({ row }) =>
-          row.original.status === "converted" ? (
-            <span className="text-xs text-muted-foreground">Converted</span>
-          ) : (
-            <ConvertLeadDialog lead={row.original} />
-          ),
+        cell: ({ row }) => (
+          <div data-stop-row-click>
+            {row.original.status === "converted" ? (
+              <span className="text-xs text-muted-foreground">Converted</span>
+            ) : (
+              <ConvertLeadDialog lead={row.original} />
+            )}
+          </div>
+        ),
       },
     ],
     [],
   );
 
-  return <DataTable columns={columns} data={rows} emptyMessage="No leads match this view." />;
+  return (
+    <DataTable
+      columns={columns}
+      data={rows}
+      onRowClick={(row) => router.push(`/leads/${row.id}`)}
+      emptyMessage="No leads match this view."
+    />
+  );
 }

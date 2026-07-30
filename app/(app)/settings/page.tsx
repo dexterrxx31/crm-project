@@ -1,9 +1,10 @@
 import { asc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { BackfillEmbeddingsButton } from "@/components/crm/backfill-embeddings-button";
 import { PageHeader } from "@/components/crm/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -16,6 +17,7 @@ import { getOrgContext } from "@/lib/auth-context";
 import { db } from "@/lib/db";
 import { member, pipelines, stages, user } from "@/lib/db/schema";
 import { tenantDb } from "@/lib/db/tenant";
+import { hasVoyageKey } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -104,6 +106,22 @@ export default async function SettingsPage() {
               ))}
             </ol>
           </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Semantic search index</CardTitle>
+            <CardDescription>
+              {hasVoyageKey()
+                ? 'Powers "similar meaning" results on the Search page. Rebuilds automatically as records change once Inngest is wired up; until then, run it manually after a bulk import.'
+                : "Not configured — set VOYAGE_API_KEY to enable semantic search. Keyword search still works without it."}
+            </CardDescription>
+          </CardHeader>
+          {hasVoyageKey() ? (
+            <CardContent>
+              <BackfillEmbeddingsButton />
+            </CardContent>
+          ) : null}
         </Card>
       </div>
     </>

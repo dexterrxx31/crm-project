@@ -5,7 +5,9 @@ import { ListToolbar } from "@/components/crm/list-toolbar";
 import { PageHeader } from "@/components/crm/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { hydrateSemanticResults, semanticSearch } from "@/lib/ai/embed";
 import { getOrgContext } from "@/lib/auth-context";
+import { hasVoyageKey } from "@/lib/env";
 import { formatCurrency } from "@/lib/format";
 import { listAccounts, listActivities, listContacts, listDeals } from "@/lib/queries/crm";
 
@@ -22,9 +24,7 @@ export default async function SearchPage({
   const { q } = await searchParams;
   const term = q?.trim();
 
-  // Keyword search across the four record types. Phase 5 layers pgvector
-  // semantic results on top of this, so results stay useful when the query
-  // shares no words with the record.
+  // Keyword search across the four record types.
   const results = term
     ? await Promise.all([
         listAccounts(context.organizationId, { q: term, perPage: 5 }),
@@ -33,6 +33,16 @@ export default async function SearchPage({
         listActivities(context.organizationId, { q: term, perPage: 5 }),
       ])
     : null;
+
+  // Semantic layer, additive: catches results that share no words with the
+  // query (e.g. searching "compliance" finds a note about "SOC 2 report").
+  // Silently skipped without VOYAGE_API_KEY — keyword search alone still works.
+  const semanticResults =
+    term && hasVoyageKey()
+      ? await semanticSearch(context.organizationId, term, { limit: 6 }).then((hits) =>
+          hydrateSemanticResults(context.organizationId, hits),
+        )
+      : [];
 
   return (
     <>
@@ -99,6 +109,31 @@ export default async function SearchPage({
             </ResultCard>
           </div>
         )}
+
+        {term && semanticResults.length > 0 ? (
+          <div>
+            <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+              Similar meaning, different words
+            </h2>
+            <div className="flex flex-col gap-2">
+              {semanticResults.map((result) => (
+                <Link
+                  key={`${result.sourceType}:${result.sourceId}`}
+                  href={result.href}
+                  className="flex items-start gap-3 rounded-lg border p-3 hover:bg-muted/50"
+                >
+                  <Badge variant="secondary" className="mt-0.5 shrink-0 capitalize">
+                    {result.sourceType}
+                  </Badge>
+                  <div className="min-w-0">
+                    <p className="font-medium">{result.title}</p>
+                    <p className="truncate text-sm text-muted-foreground">{result.chunk}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </>
   );

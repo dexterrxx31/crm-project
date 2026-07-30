@@ -1,12 +1,13 @@
 "use client";
 
-import { CalendarClock, Check, Mail, NotebookPen, Phone, Users } from "lucide-react";
+import { CalendarClock, Check, ListTodo, Mail, NotebookPen, Phone, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toggleTask } from "@/lib/actions/activities";
+import { extractActionItemsAction } from "@/lib/actions/ai";
 import { formatDate, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,23 @@ export function Timeline({ entries }: { entries: TimelineEntry[] }) {
     },
     onError() {
       toast.error("Could not update that task.");
+    },
+  });
+  const { execute: extractItems, isPending: isExtracting } = useAction(extractActionItemsAction, {
+    onSuccess({ data }) {
+      if (!data?.ok) {
+        toast.error(data?.message ?? "Could not extract action items.");
+        return;
+      }
+      if (data.items.length === 0) {
+        toast.info("No action items found in this note.");
+        return;
+      }
+      toast.success(`Created ${data.items.length} task${data.items.length === 1 ? "" : "s"}`);
+      router.refresh();
+    },
+    onError({ error }) {
+      toast.error(error.serverError ?? "Could not extract action items.");
     },
   });
 
@@ -102,6 +120,20 @@ export function Timeline({ entries }: { entries: TimelineEntry[] }) {
               >
                 <Check className="size-4" aria-hidden="true" />
                 {done ? "Undo" : "Done"}
+              </Button>
+            ) : null}
+
+            {(entry.type === "note" || entry.type === "call" || entry.type === "meeting") &&
+            entry.body ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 self-start"
+                disabled={isExtracting}
+                onClick={() => extractItems({ activityId: entry.id })}
+              >
+                <ListTodo className="size-4" aria-hidden="true" />
+                Extract tasks
               </Button>
             ) : null}
           </li>

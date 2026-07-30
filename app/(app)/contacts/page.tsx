@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ContactsTable } from "@/components/crm/contacts-table";
+import { DedupeContactsDialog } from "@/components/crm/dedupe-contacts-dialog";
 import { contactFields } from "@/components/crm/field-definitions";
 import { ListToolbar } from "@/components/crm/list-toolbar";
 import { PageHeader } from "@/components/crm/page-header";
@@ -36,15 +37,18 @@ export default async function ContactsPage({
         title="Contacts"
         description="The people you talk to."
         actions={
-          <RecordFormDialog
-            title="New contact"
-            trigger={<Button>New contact</Button>}
-            fields={contactFields(options.accounts)}
-            action={createContact}
-            defaultValues={{ status: "lead", accountId: "none" }}
-            submitLabel="Create contact"
-            successMessage="Contact created"
-          />
+          <>
+            <DedupeContactsDialog />
+            <RecordFormDialog
+              title="New contact"
+              trigger={<Button>New contact</Button>}
+              fields={contactFields(options.accounts)}
+              action={createContact}
+              defaultValues={{ status: "lead", accountId: "none" }}
+              submitLabel="Create contact"
+              successMessage="Contact created"
+            />
+          </>
         }
       />
 

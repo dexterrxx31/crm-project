@@ -41,8 +41,22 @@ export const activityTypeEnum = pgEnum("activity_type", [
   "task",
 ]);
 
-/** Polymorphic target for activities, embeddings and insights. */
-export const subjectTypeEnum = pgEnum("subject_type", ["account", "contact", "lead", "deal"]);
+/**
+ * Polymorphic target, reused across three unrelated purposes: what an
+ * activity is attached to (`activities.relatedType`), what a tag is on
+ * (`taggings.subjectType`), and what an embedding or AI insight is derived
+ * from (`embeddings.sourceType`, `ai_insights.subjectType`). "activity" only
+ * has meaning for the last of those — an activity can be an embedding
+ * *source* (its own text is searchable), but is never itself the *target* of
+ * another activity or tag. One shared enum, not every column uses every value.
+ */
+export const subjectTypeEnum = pgEnum("subject_type", [
+  "account",
+  "contact",
+  "lead",
+  "deal",
+  "activity",
+]);
 
 export const insightKindEnum = pgEnum("insight_kind", ["lead_score", "deal_health"]);
 
