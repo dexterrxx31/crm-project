@@ -1,20 +1,20 @@
 import { and, count, eq, isNull, lt, sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { ForecastChart } from "@/components/crm/charts/forecast-chart";
+import { FunnelChart } from "@/components/crm/charts/funnel-chart";
 import { PageHeader } from "@/components/crm/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getOrgContext } from "@/lib/auth-context";
 import { activities, contacts, deals, leads } from "@/lib/db/schema";
 import { tenantDb } from "@/lib/db/tenant";
 import { formatCurrency } from "@/lib/format";
+import { closeForecast, pipelineFunnel } from "@/lib/queries/reports";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-export default async function DashboardPage() {
-  const context = await getOrgContext();
-  if (!context) redirect("/login");
-
-  const stats = await tenantDb(context.organizationId, async (tx) => {
+async function dashboardStats(organizationId: string) {
+  return tenantDb(organizationId, async (tx) => {
     const [pipeline] = await tx
       .select({
         openCount: count(),
@@ -65,6 +65,17 @@ export default async function DashboardPage() {
       overdueTasks: overdue.value,
     };
   });
+}
+
+export default async function DashboardPage() {
+  const context = await getOrgContext();
+  if (!context) redirect("/login");
+
+  const [stats, funnel, forecast] = await Promise.all([
+    dashboardStats(context.organizationId),
+    pipelineFunnel(context.organizationId),
+    closeForecast(context.organizationId),
+  ]);
 
   const tiles = [
     {
@@ -118,6 +129,26 @@ export default async function DashboardPage() {
           </Card>
         </div>
       ) : null}
+
+      <div className="grid gap-4 p-6 pt-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Pipeline by stage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FunnelChart data={funnel} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Forecast — next 6 months</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ForecastChart data={forecast} />
+          </CardContent>
+        </Card>
+      </div>
     </>
   );
 }
