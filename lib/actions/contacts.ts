@@ -6,11 +6,7 @@ import { recordAudit } from "@/lib/audit";
 import { contacts } from "@/lib/db/schema";
 import { notify } from "@/lib/inngest/client";
 import { orgAction } from "@/lib/safe-action";
-import {
-  createContactSchema,
-  deleteContactSchema,
-  updateContactSchema,
-} from "@/lib/validators/crm";
+import { createContactSchema, updateContactSchema } from "@/lib/validators/crm";
 
 export const createContact = orgAction
   .metadata({ name: "contacts.create" })
@@ -76,32 +72,4 @@ export const updateContact = orgAction
     revalidatePath("/contacts");
     revalidatePath(`/contacts/${id}`);
     return { id };
-  });
-
-export const deleteContact = orgAction
-  .metadata({ name: "contacts.delete", requiredRole: "admin" })
-  .inputSchema(deleteContactSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    await ctx.withTenant(async (tx) => {
-      const [before] = await tx
-        .select()
-        .from(contacts)
-        .where(eq(contacts.id, parsedInput.id))
-        .limit(1);
-      if (!before) throw new Error("NOT_FOUND");
-
-      await tx.delete(contacts).where(eq(contacts.id, parsedInput.id));
-
-      await recordAudit(tx, {
-        organizationId: ctx.organizationId,
-        actorId: ctx.userId,
-        action: "delete",
-        entityType: "contact",
-        entityId: parsedInput.id,
-        before,
-      });
-    });
-
-    revalidatePath("/contacts");
-    return { id: parsedInput.id };
   });

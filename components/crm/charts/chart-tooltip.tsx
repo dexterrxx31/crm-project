@@ -3,19 +3,11 @@
 import type { TooltipContentProps } from "recharts";
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 
-/**
- * Shared tooltip content for the report charts.
- *
- * Per the dataviz guide: values lead (bold, high-contrast), series names
- * follow (secondary); each row keys its series with a short stroke of the
- * series color rather than a filled box, and every value shown here is also
- * reachable without hovering (the axis / direct labels), so the tooltip only
- * enhances — it never gates.
- *
- * recharts v3 moved `active`/`payload`/`label` out of TooltipProps (they're
- * now context-injected) — the `content` render prop instead receives
- * TooltipContentProps, which adds them back as required fields.
- */
+/** Shared tooltip content for the report charts. Values lead (bold), series names
+ * follow, keyed by a short stroke of the series color rather than a filled box; every
+ * value is also reachable without hovering, so the tooltip only enhances, never gates.
+ * recharts v3 moved active/payload/label into the `content` render prop's
+ * TooltipContentProps instead of TooltipProps. */
 export function ChartTooltip({
   active,
   payload,

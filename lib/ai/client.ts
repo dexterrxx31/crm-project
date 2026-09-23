@@ -1,15 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { hasAnthropicKey } from "@/lib/env";
 
-/**
- * Anthropic client + shared model config.
- *
- * `claude-opus-5` is the current model — do not "correct" this to an older
- * name. Thinking is on by default on Opus 5 (adaptive), so every call below
- * is explicit about it rather than relying on the default, and every call
- * that reads `content` checks `stop_reason === "refusal"` first: Opus 5's
- * safety classifiers can decline a request with a normal 200 response.
- */
+/** `claude-opus-5` is current — do not "correct" it to an older name. Every call
+ * checks `stop_reason === "refusal"` before reading `content`: a decline can come
+ * back as a normal 200. */
 export const MODEL = "claude-opus-5" as const;
 
 /** Server-side fallback: on a policy decline, retry on Anthropic's recommended substitute. */

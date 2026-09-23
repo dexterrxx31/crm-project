@@ -7,8 +7,6 @@ import { hasVoyageKey } from "@/lib/env";
  */
 const VOYAGE_URL = "https://api.voyageai.com/v1/embeddings";
 const MODEL = "voyage-3" as const;
-/** voyage-3's output size — must match the `embeddings.embedding` column (vector(1024)). */
-export const EMBEDDING_DIMENSIONS = 1024;
 
 export class VoyageNotConfiguredError extends Error {
   constructor() {

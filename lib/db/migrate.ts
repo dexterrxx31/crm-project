@@ -1,16 +1,8 @@
 /**
- * Migration runner. Runs as the **owner/admin** role, which needs to create
- * types and tables — see DATABASE_ADMIN_URL below.
- *
- * Ordering matters:
- *   1. `vector` extension — the embeddings table declares a `vector(1024)`
- *      column, so the type must exist before any migration references it.
- *   2. Drizzle migrations.
- *   3. Roles + grants — after the tables exist, so the GRANTs cover them.
- *   4. RLS policies — re-applied every run so policy edits ship without
- *      needing a hand-written migration.
- *
- * Run with `bun run db:migrate` (bun loads .env.local automatically).
+ * Migration runner — owner/admin role (needs DDL rights). Order matters:
+ * vector extension (the type must exist before migrations reference it) →
+ * drizzle migrations → roles/grants (after tables exist) → RLS policies
+ * (re-applied every run so edits ship without a hand-written migration).
  */
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";

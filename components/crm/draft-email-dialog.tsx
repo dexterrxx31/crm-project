@@ -19,11 +19,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { draftEmailAction } from "@/lib/actions/ai";
 
-/**
- * Drafts a follow-up email and lets the rep copy it. Sending is Phase 6
- * (Resend wiring) — for now this produces a subject + body the rep pastes
- * into their own mail client, which is still the useful part: the drafting.
- */
+/** Drafts a follow-up email and lets the rep copy it. Sending isn't wired up yet — this
+ * produces a subject + body the rep pastes into their own mail client, which is still
+ * the useful part: the drafting. */
 export function DraftEmailDialog({
   contactId,
   hasEmail,

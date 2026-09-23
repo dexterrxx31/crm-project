@@ -104,17 +104,18 @@ export function RecordFormDialog({
 
   const errorFor = (name: string) => validationErrors?.[name]?._errors?.[0];
 
+  // Shared by onOpenChange (Escape, backdrop click) and the Cancel button, so
+  // cancelling doesn't leave a stale error behind for the next time this opens.
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) {
+      setFormError(null);
+      reset();
+    }
+  }
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) {
-          setFormError(null);
-          reset();
-        }
-      }}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
@@ -196,7 +197,7 @@ export function RecordFormDialog({
           })}
 
           <DialogFooter className="mt-2">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>

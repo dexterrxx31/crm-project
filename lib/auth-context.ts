@@ -18,13 +18,9 @@ export type OrgContext = {
 };
 
 /**
- * Resolves the caller's session and active organization.
- *
- * `cache()` dedupes this across a single render pass, so a page and its nested
- * server components share one lookup rather than re-querying per component.
- *
- * Returns null when unauthenticated or when the user has no membership yet —
- * callers decide whether that is a redirect or an error.
+ * Resolves the caller's session and active organization. `cache()` dedupes this
+ * per render pass. Returns null when unauthenticated or with no membership —
+ * callers decide whether that's a redirect or an error.
  */
 export const getOrgContext = cache(async (): Promise<OrgContext | null> => {
   const result = await auth.api.getSession({ headers: await headers() });
@@ -32,9 +28,8 @@ export const getOrgContext = cache(async (): Promise<OrgContext | null> => {
 
   const userId = result.user.id;
 
-  // The organization plugin stores the active org on the session. If it is
-  // unset (first login after signup, or a stale session), fall back to the
-  // user's membership and repair the session so later requests are cheap.
+  // Falls back to the user's own membership if the session has no active org yet
+  // (first login, or a stale session), then repairs the session for next time.
   let organizationId = result.session?.activeOrganizationId ?? null;
 
   const memberships = await db.select().from(member).where(eq(member.userId, userId));

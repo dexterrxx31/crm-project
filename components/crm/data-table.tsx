@@ -20,13 +20,9 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-/**
- * Thin wrapper over TanStack Table.
- *
- * Sorting is client-side over the current page; searching and pagination are
- * server-side (see the nuqs-backed toolbar), because a CRM table can grow past
- * what is sensible to ship to the browser.
- */
+/** Thin wrapper over TanStack Table. Sorting is client-side over the current page;
+ * searching/pagination are server-side (nuqs-backed toolbar) since a CRM table can
+ * outgrow what's sensible to ship to the browser. */
 export function DataTable<TData>({
   columns,
   data,

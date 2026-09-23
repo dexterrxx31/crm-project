@@ -8,16 +8,12 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { getDeal, getLead } from "@/lib/queries/crm";
 
 /**
- * Lead scoring and deal-health scoring. Structured output via
- * `output_config.format` guarantees the shape — no "please respond with JSON"
- * prompting, no manual parsing.
- *
- * Runs as a plain async function, callable from a Server Action (an explicit
- * "Score this" button) or an Inngest job (Phase 6 wires the nightly/on-change
- * trigger). Deliberately skips the `fallbacks` param that the chat agent
- * uses: a scoring pass is background work, not a blocked interactive
- * request — on a rare refusal it's cheaper to skip that one record until the
- * next run than to add fallback-routing complexity here.
+ * Lead and deal-health scoring. `output_config.format` guarantees the shape —
+ * no "respond with JSON" prompting, no manual parsing. Callable from a Server
+ * Action or an Inngest job (nightly/on-change). Skips the chat agent's
+ * `fallbacks` param on purpose: this is background work, so on a rare refusal
+ * it's cheaper to skip the record until the next run than to add fallback
+ * routing here.
  */
 
 export const scoreOutputSchema = z.object({

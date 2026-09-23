@@ -2,16 +2,9 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { env } from "@/lib/env";
 
-/**
- * Per-organization rate limit for `/api/ai/*` — a chat turn can trigger a
- * multi-step agent loop with several Claude calls, so this is the cheapest
- * place to cap cost/abuse, ahead of any individual model call.
- *
- * Without Upstash configured (the local-dev default — see `.env.example`),
- * `limiter()` returns null and every caller treats that as "unlimited": AI
- * routes must work without a Redis account, same as they work without an
- * Anthropic key.
- */
+/** Per-org rate limit for /api/ai/* — caps agent-loop cost before any model call.
+ * Returns null (unlimited) when Upstash isn't configured, like every other optional
+ * integration here. */
 let cached: Ratelimit | null | undefined;
 
 function limiter(): Ratelimit | null {

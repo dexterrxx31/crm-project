@@ -3,12 +3,9 @@
 import posthog from "posthog-js";
 import { useEffect } from "react";
 
-/**
- * Ties the anonymous PostHog session to the signed-in user/org once per
- * mount. A no-op when `NEXT_PUBLIC_POSTHOG_KEY` is unset — `posthog.identify`
- * is safe to call on an uninitialized client, but skipping avoids queuing
- * events that will never be flushed.
- */
+/** Ties the anonymous PostHog session to the signed-in user/org once per mount.
+ * Skipped when NEXT_PUBLIC_POSTHOG_KEY is unset, to avoid queuing events that
+ * will never be flushed. */
 export function PosthogIdentify({
   userId,
   userEmail,

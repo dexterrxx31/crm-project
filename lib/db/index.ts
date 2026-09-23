@@ -26,5 +26,4 @@ function client() {
 export const sql = client();
 export const db = drizzle(sql, { schema });
 
-export type Database = typeof db;
 export { schema };

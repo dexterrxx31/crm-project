@@ -6,12 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { backfillEmbeddingsAction } from "@/lib/actions/ai";
 
-/**
- * Manual trigger for the semantic-search index. Phase 6 replaces this with
- * an Inngest function that embeds each record on create/update — this
- * button (and the underlying full-sweep function) stays useful afterward as
- * a "rebuild the index" escape hatch.
- */
+/** Manual trigger for the semantic-search index. Records are also embedded automatically
+ * on create/update via Inngest; this stays useful as a "rebuild the whole index" escape hatch. */
 export function BackfillEmbeddingsButton() {
   const { execute, isPending } = useAction(backfillEmbeddingsAction, {
     onSuccess({ data }) {

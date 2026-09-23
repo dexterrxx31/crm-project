@@ -25,17 +25,13 @@ import {
 } from "@/lib/validators/ai";
 
 /**
- * Tools available to the CRM agent.
- *
- * Read tools execute immediately — they can only leak data the caller's own
- * RLS-scoped session already has access to. Write tools never execute inline;
- * `lib/ai/agent.ts` pauses the turn and returns a confirmation request instead,
- * and only `executeWriteTool` (called from the /confirm route, after the user
- * has explicitly approved) performs the mutation.
+ * Tools available to the CRM agent. Read tools run immediately (RLS already
+ * scopes what they can see); write tools only run via `executeWriteTool`,
+ * after explicit user confirmation — see `lib/ai/agent.ts`.
  */
 
-export const READ_TOOL_NAMES = ["search_records", "get_record", "list_pipeline_stages"] as const;
-export const WRITE_TOOL_NAMES = ["create_activity", "create_task", "update_deal_stage"] as const;
+const READ_TOOL_NAMES = ["search_records", "get_record", "list_pipeline_stages"] as const;
+const WRITE_TOOL_NAMES = ["create_activity", "create_task", "update_deal_stage"] as const;
 
 export type ReadToolName = (typeof READ_TOOL_NAMES)[number];
 export type WriteToolName = (typeof WRITE_TOOL_NAMES)[number];
@@ -366,12 +362,7 @@ export async function describeWriteTool(
   }
 }
 
-/**
- * Executes a write tool. Only called from the confirm route, after the user
- * has approved — never from the initial turn. Reuses the same Server Actions
- * the UI's forms call, so writes get the same audit-log entry and
- * pipeline-derivation logic as a human-driven edit.
- */
+/** Runs a write tool after user approval, via the same Server Actions the UI forms use. */
 export async function executeWriteTool(
   organizationId: string,
   name: WriteToolName,

@@ -1,15 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * The one end-to-end path that has to work: sign up, build out a minimal
- * account → contact → deal chain, move the deal on the board, and confirm
- * the agent chat responds to something.
- *
- * The agent step doesn't assert on model output — CI runs without
- * `ANTHROPIC_API_KEY` — it asserts the chat pipeline degrades the way
- * `lib/ai/client.ts` promises: a clear "not configured" message, not a
- * silent failure. If a real key is present, an actual answer satisfies the
- * same assertion.
+ * The one end-to-end path that has to work: sign up, account → contact → deal,
+ * move the deal on the board, and confirm the agent chat responds to something.
+ * The agent step doesn't assert on model output (CI has no ANTHROPIC_API_KEY) —
+ * it asserts the chat pipeline degrades to a clear "not configured" message, per
+ * lib/ai/client.ts. A real key would satisfy the same assertion with a real answer.
  */
 test("signup → account → contact → deal → move stage → ask the agent", async ({ page }) => {
   const runId = Date.now();

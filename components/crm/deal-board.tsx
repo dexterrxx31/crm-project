@@ -5,6 +5,9 @@ import {
   type DragEndEvent,
   DragOverlay,
   type DragStartEvent,
+  KeyboardCode,
+  type KeyboardCoordinateGetter,
+  KeyboardSensor,
   PointerSensor,
   useDraggable,
   useDroppable,
@@ -32,6 +35,22 @@ export type BoardDeal = {
 
 export type BoardStage = { id: string; name: string; probability: number };
 
+// dnd-kit's default coordinate getter moves 25px per arrow press — for this board's
+// w-72 (288px) columns that's a dozen presses to cross one. Columns are laid out
+// purely horizontally, so a bigger horizontal step (and no vertical movement) gets a
+// card into the next column in two or three presses instead.
+const boardKeyboardCoordinateGetter: KeyboardCoordinateGetter = (event, { currentCoordinates }) => {
+  const step = 120;
+  switch (event.code) {
+    case KeyboardCode.Right:
+      return { ...currentCoordinates, x: currentCoordinates.x + step };
+    case KeyboardCode.Left:
+      return { ...currentCoordinates, x: currentCoordinates.x - step };
+    default:
+      return undefined;
+  }
+};
+
 export function DealBoard({
   stages,
   initialDealsByStage,
@@ -43,17 +62,14 @@ export function DealBoard({
   const [dealsByStage, setDealsByStage] = useState(initialDealsByStage);
   const [dragging, setDragging] = useState<BoardDeal | null>(null);
 
-  // `useState(initialDealsByStage)` only seeds the first render — without this,
-  // a `router.refresh()` (ours after a move, or the realtime listener below
-  // after someone else's) fetches fresh server props that never reach local
-  // state, and the board silently stops reflecting reality.
+  // useState only seeds the first render — without this, a router.refresh() (ours after
+  // a move, or the realtime listener below after someone else's) never reaches local state.
   useEffect(() => {
     setDealsByStage(initialDealsByStage);
   }, [initialDealsByStage]);
 
-  // Realtime sync: another tab or teammate moving/closing a deal calls
-  // publishDealBoardEvent server-side (see lib/actions/deals.ts); this
-  // listens on the SSE channel and refreshes so this board picks it up too.
+  // Another tab/teammate's move calls publishDealBoardEvent (lib/actions/deals.ts);
+  // this listens on the SSE channel and refreshes so this board picks it up too.
   useEffect(() => {
     const source = new EventSource("/api/events");
     source.onmessage = (event) => {
@@ -70,8 +86,14 @@ export function DealBoard({
     return () => source.close();
   }, [router]);
 
-  // Require a small drag distance so clicking a card still navigates.
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  // Require a small drag distance so clicking a card still navigates. KeyboardSensor
+  // makes cards movable by Tab + Space/Enter + arrow keys, with the wider horizontal
+  // step above — this board is plain droppable columns, not @dnd-kit/sortable, so
+  // there's no built-in "jump to next column" to reach for instead.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: boardKeyboardCoordinateGetter }),
+  );
 
   const { execute } = useAction(moveDeal, {
     onError({ error }) {

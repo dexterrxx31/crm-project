@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { PosthogIdentify } from "@/components/analytics/posthog-identify";
 import { AiChat } from "@/components/crm/ai-chat";
 import { AppNav } from "@/components/crm/app-nav";
+import { MobileNav } from "@/components/crm/mobile-nav";
 import { UserMenu } from "@/components/crm/user-menu";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,7 +41,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </aside>
 
-        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col">
+          <MobileNav
+            organizationName={context.organizationName}
+            userName={context.userName}
+            userEmail={context.userEmail}
+          />
+          {children}
+        </main>
       </div>
       <Toaster />
     </TooltipProvider>

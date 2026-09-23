@@ -11,21 +11,14 @@ import {
 } from "@/lib/ai/tools";
 
 /**
- * The CRM agent's turn loop.
- *
- * Protocol, enforced by both the system prompt and this code (never trust the
- * model to self-limit): a turn may request any number of read tools together
- * — those execute immediately, no gate needed, since RLS already scopes what
- * they can see to the caller's own org. A turn may request **at most one**
- * write tool, called alone. If the model breaks that rule (asks for a write
- * alongside anything else), the write call is answered with an error result
- * instructing it to retry alone, and the loop continues automatically — no
- * client round-trip. Only a lone write tool call pauses the loop and asks
- * the caller to confirm.
- *
- * This keeps the wire protocol simple: at most one pending confirmation at a
- * time, and `messages` (the full Anthropic-format transcript) is the only
- * state — held by the client between requests, this server is stateless.
+ * The CRM agent's turn loop. Protocol, enforced here (never trust the model
+ * to self-limit) as well as the system prompt: any number of read tools may
+ * run together immediately (RLS already scopes what they see), but at most
+ * one write tool may be called, alone — breaking that rule gets an
+ * instructional error and the loop retries with no client round-trip. Only a
+ * lone write pauses the loop for confirmation. Result: at most one pending
+ * confirmation at a time, and `messages` is the only state — held by the
+ * client, this server is stateless.
  */
 
 const SYSTEM_PROMPT = `You are the CRM assistant inside Synapse CRM, with read and write access to
@@ -78,14 +71,9 @@ function summarizeReadResult(name: ReadToolName, result: unknown): string {
   return "Retrieved record";
 }
 
-/**
- * Filters an assistant turn's content before it's echoed back into later
- * requests, per the fallback-echo rule: thinking / redacted_thinking / any
- * unpaired tool_use block that appears *before* a `fallback` marker in the
- * same turn must be dropped (the fallback model never saw them). A no-op
- * when the turn has no fallback block, which is the overwhelmingly common
- * case.
- */
+/** Per the fallback-echo rule, drops thinking/redacted_thinking/tool_use blocks that
+ * appear before a `fallback` marker (the fallback model never saw them). No-op
+ * when the turn has no fallback block — the common case. */
 function filterFallbackTurn(
   content: Anthropic.Beta.BetaContentBlockParam[],
 ): Anthropic.Beta.BetaContentBlockParam[] {
@@ -112,24 +100,17 @@ export class ConfirmationMismatchError extends Error {
 }
 
 /**
- * Resolves a paused write confirmation and appends the result to `messages`,
- * ready for `runAgent` to continue the loop.
+ * Resolves a paused write confirmation and appends the result to `messages`.
  *
- * Ground truth for *what* is being confirmed comes from the tool_use block
- * inside the caller-supplied `messages` transcript, not from separately
- * client-asserted fields — a client can only approve or deny the specific
- * call the model actually made, never substitute a different one. This
- * server is otherwise stateless (no persisted session ties a confirmation id
- * to a server-side record of what was proposed), which is a deliberate
- * tradeoff: the same authenticated user could already perform any of these
- * writes directly through the ordinary CRM forms, so a hand-crafted request
- * that skips the confirmation dialog is not a privilege escalation — it's
- * the same permission boundary the rest of the app already enforces (RLS +
- * role checks in the underlying Server Actions). What this *does* still
- * need to resist is a third-party site forging the request on a signed-in
- * user's behalf; that's the standard CSRF threat model, and it's covered by
- * the session cookie's SameSite=Lax default (no cross-site fetch carries it),
- * the same protection Next.js Server Actions rely on via their Origin check.
+ * Ground truth for what's being confirmed comes from the tool_use block in the
+ * caller-supplied transcript, not client-asserted fields — a client can only
+ * approve/deny the call the model actually made. This server stays stateless
+ * (no server-side record ties a confirmation id to what was proposed): the
+ * same user could already perform any of these writes via the ordinary CRM
+ * forms, so skipping the dialog isn't privilege escalation, just the same RLS
+ * + role checks the underlying Server Actions already enforce. The remaining
+ * threat — a third-party site forging this request — is covered by the
+ * session cookie's SameSite=Lax default, same as Next.js Server Actions.
  */
 export async function resolvePendingWrite(
   organizationId: string,
@@ -176,11 +157,8 @@ export async function resolvePendingWrite(
   emit({ type: "user-message", content: [result] });
 }
 
-/**
- * Runs the agent loop starting from `messages` (mutated in place — the
- * caller owns persisting it) until it finishes a turn, pauses on a write
- * confirmation, or hits the iteration cap.
- */
+/** Runs the agent loop, mutating `messages` in place, until it finishes, pauses on a
+ * write confirmation, or hits the iteration cap. */
 export async function runAgent(
   organizationId: string,
   messages: Anthropic.Beta.BetaMessageParam[],

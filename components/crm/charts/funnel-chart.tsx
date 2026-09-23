@@ -20,14 +20,8 @@ export type FunnelDatum = {
   valueCents: number;
 };
 
-/**
- * Open pipeline value by stage, as a horizontal bar chart.
- *
- * A single measure across ordered categories is one series, not a magnitude
- * ramp — so every bar takes the same flat color (--report-value) rather than
- * a light-to-dark sequential scale. No legend: with one series the chart
- * title already names what's being shown.
- */
+/** Open pipeline value by stage. One series (not a magnitude ramp), so every bar is a
+ * flat color rather than a sequential scale; no legend since the title already names it. */
 export function FunnelChart({ data }: { data: FunnelDatum[] }) {
   if (data.length === 0 || data.every((d) => d.dealCount === 0)) {
     return (

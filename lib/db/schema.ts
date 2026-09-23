@@ -41,15 +41,9 @@ export const activityTypeEnum = pgEnum("activity_type", [
   "task",
 ]);
 
-/**
- * Polymorphic target, reused across three unrelated purposes: what an
- * activity is attached to (`activities.relatedType`), what a tag is on
- * (`taggings.subjectType`), and what an embedding or AI insight is derived
- * from (`embeddings.sourceType`, `ai_insights.subjectType`). "activity" only
- * has meaning for the last of those — an activity can be an embedding
- * *source* (its own text is searchable), but is never itself the *target* of
- * another activity or tag. One shared enum, not every column uses every value.
- */
+/** Polymorphic target enum, shared by `activities.relatedType`, `taggings.subjectType`, and
+ * `embeddings.sourceType`/`ai_insights.subjectType`. "activity" only applies to the last
+ * two — an activity can be an embedding source, but never a tag/activity target itself. */
 export const subjectTypeEnum = pgEnum("subject_type", [
   "account",
   "contact",
@@ -64,12 +58,8 @@ export const insightKindEnum = pgEnum("insight_kind", ["lead_score", "deal_healt
 // Shared column builders
 // ---------------------------------------------------------------------------
 
-/**
- * Every business table carries this. RLS policies compare it against the
- * `app.current_organization_id` session variable set by the withOrg wrapper,
- * so a query that forgets its tenant filter returns nothing rather than
- * leaking across organizations.
- */
+/** Every business table carries this — RLS compares it against the
+ * `app.current_organization_id` session variable the withOrg wrapper sets. */
 const orgId = () =>
   text("organization_id")
     .notNull()
@@ -350,6 +340,7 @@ export const embeddings = pgTable(
     sourceId: uuid("source_id").notNull(),
     /** Which activity/field the chunk came from, for citation in search results. */
     chunk: text("chunk").notNull(),
+    /** Must match voyage-3's output size (lib/ai/voyage.ts). */
     embedding: vector("embedding", { dimensions: 1024 }).notNull(),
     createdAt: createdAt(),
   },
@@ -470,19 +461,12 @@ export const taggingsRelations = relations(taggings, ({ one }) => ({
 // ---------------------------------------------------------------------------
 
 export type Account = typeof accounts.$inferSelect;
-export type NewAccount = typeof accounts.$inferInsert;
 export type Contact = typeof contacts.$inferSelect;
-export type NewContact = typeof contacts.$inferInsert;
 export type Lead = typeof leads.$inferSelect;
-export type NewLead = typeof leads.$inferInsert;
 export type Pipeline = typeof pipelines.$inferSelect;
 export type Stage = typeof stages.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
-export type NewDeal = typeof deals.$inferInsert;
 export type Activity = typeof activities.$inferSelect;
-export type NewActivity = typeof activities.$inferInsert;
-export type AiInsight = typeof aiInsights.$inferSelect;
-export type Embedding = typeof embeddings.$inferSelect;
 
 /** Raw SQL helper used by the withOrg wrapper to scope a transaction. */
 export const setCurrentOrg = (organizationId: string) =>

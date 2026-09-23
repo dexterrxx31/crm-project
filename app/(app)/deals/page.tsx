@@ -65,7 +65,9 @@ export default async function DealsPage({
       />
 
       <div className="flex flex-col gap-4 p-6">
-        {view === "board" ? <BoardView organizationId={context.organizationId} /> : null}
+        {view === "board" ? (
+          <BoardView organizationId={context.organizationId} q={params.q} />
+        ) : null}
         {view === "list" ? (
           <ListView organizationId={context.organizationId} params={params} />
         ) : null}
@@ -74,8 +76,8 @@ export default async function DealsPage({
   );
 }
 
-async function BoardView({ organizationId }: { organizationId: string }) {
-  const { stages, dealsByStage } = await dealBoard(organizationId);
+async function BoardView({ organizationId, q }: { organizationId: string; q?: string }) {
+  const { stages, dealsByStage } = await dealBoard(organizationId, q);
 
   if (stages.length === 0) {
     return (
@@ -85,7 +87,12 @@ async function BoardView({ organizationId }: { organizationId: string }) {
     );
   }
 
-  return <DealBoard stages={stages} initialDealsByStage={dealsByStage} />;
+  return (
+    <>
+      <ListToolbar />
+      <DealBoard stages={stages} initialDealsByStage={dealsByStage} />
+    </>
+  );
 }
 
 async function ListView({

@@ -44,7 +44,7 @@ export default async function AccountDetailPage({
             <LogActivityDialog relatedType="account" relatedId={account.id} />
             <RecordFormDialog
               title="Edit account"
-              trigger={<Button>Edit</Button>}
+              trigger={<Button variant="outline">Edit</Button>}
               fields={ACCOUNT_FIELDS}
               action={updateAccount}
               hiddenValues={{ id: account.id }}

@@ -56,7 +56,6 @@ export const accountInputSchema = z.object({
 
 export const createAccountSchema = accountInputSchema;
 export const updateAccountSchema = accountInputSchema.extend({ id: uuid });
-export const deleteAccountSchema = z.object({ id: uuid });
 
 // ---------------------------------------------------------------------------
 // Contacts
@@ -77,7 +76,6 @@ export const contactInputSchema = z.object({
 
 export const createContactSchema = contactInputSchema;
 export const updateContactSchema = contactInputSchema.extend({ id: uuid });
-export const deleteContactSchema = z.object({ id: uuid });
 
 // ---------------------------------------------------------------------------
 // Leads
@@ -96,7 +94,6 @@ export const leadInputSchema = z.object({
 
 export const createLeadSchema = leadInputSchema;
 export const updateLeadSchema = leadInputSchema.extend({ id: uuid });
-export const deleteLeadSchema = z.object({ id: uuid });
 
 /** Lead → account + contact (+ optional deal). */
 export const convertLeadSchema = z.object({
@@ -131,7 +128,6 @@ export const dealInputSchema = z.object({
 
 export const createDealSchema = dealInputSchema;
 export const updateDealSchema = dealInputSchema.extend({ id: uuid });
-export const deleteDealSchema = z.object({ id: uuid });
 
 /** Used by the kanban board's drag handler. */
 export const moveDealSchema = z.object({
@@ -162,16 +158,4 @@ export const activityInputSchema = z.object({
 });
 
 export const createActivitySchema = activityInputSchema;
-export const updateActivitySchema = activityInputSchema.extend({ id: uuid });
-export const deleteActivitySchema = z.object({ id: uuid });
 export const toggleTaskSchema = z.object({ id: uuid, completed: z.boolean() });
-
-// ---------------------------------------------------------------------------
-// Inferred input types
-// ---------------------------------------------------------------------------
-
-export type AccountInput = z.infer<typeof accountInputSchema>;
-export type ContactInput = z.infer<typeof contactInputSchema>;
-export type LeadInput = z.infer<typeof leadInputSchema>;
-export type DealInput = z.infer<typeof dealInputSchema>;
-export type ActivityInput = z.infer<typeof activityInputSchema>;

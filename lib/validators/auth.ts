@@ -11,6 +11,3 @@ export const signUpSchema = z.object({
   password: z.string().min(8, "Use at least 8 characters"),
   organizationName: z.string().min(1, "Name your organization").max(120),
 });
-
-export type SignInInput = z.infer<typeof signInSchema>;
-export type SignUpInput = z.infer<typeof signUpSchema>;

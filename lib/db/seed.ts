@@ -1,12 +1,6 @@
 /**
- * Demo seed. Idempotent — safe to re-run.
- *
- * Carries forward the two fixtures from the original prototype
- * (`customers.json` → accounts + contacts, `salesOrders.json` → a deal) and
- * fills in enough surrounding data that the dashboard, pipeline board and
- * semantic search have something real to show.
- *
- * Run with `bun run db:seed`.
+ * Demo seed. Idempotent — safe to re-run. Fills in enough data that the
+ * dashboard, pipeline board and semantic search have something real to show.
  */
 import { randomUUID } from "node:crypto";
 import { eq, sql as raw } from "drizzle-orm";
@@ -85,14 +79,11 @@ async function ensureOrg(userId: string): Promise<string> {
 }
 
 async function seedCrmData(orgId: string, ownerId: string) {
-  // RLS is FORCEd, so every statement in here needs the tenant variable set.
-  // set_config(..., true) is transaction-scoped, which is exactly the guarantee
-  // the withOrg wrapper relies on at runtime.
+  // RLS is FORCEd, so every statement here needs the tenant variable set.
   await db.transaction(async (tx) => {
     await tx.execute(raw`select set_config('app.current_organization_id', ${orgId}, true)`);
 
-    // Wipe prior demo rows so re-running produces the same result rather than
-    // stacking duplicates. Order respects foreign keys.
+    // Wipe prior demo rows so re-running is idempotent. Order respects foreign keys.
     await tx.delete(activities);
     await tx.delete(deals);
     await tx.delete(leads);
@@ -161,7 +152,7 @@ async function seedCrmData(orgId: string, ownerId: string) {
       { organizationId: orgId, name: "at-risk", color: "rose" },
     ]);
 
-    // --- Accounts (from the original customers.json "company" field) ---------
+    // --- Accounts -------------------------------------------------------------
     const accountRows = await tx
       .insert(accounts)
       .values([
@@ -211,7 +202,7 @@ async function seedCrmData(orgId: string, ownerId: string) {
       return found.id;
     };
 
-    // --- Contacts (the original customers.json records) ----------------------
+    // --- Contacts -------------------------------------------------------------
     const contactRows = await tx
       .insert(contacts)
       .values([
@@ -265,7 +256,7 @@ async function seedCrmData(orgId: string, ownerId: string) {
     const contactByEmail = new Map(contactRows.map((c) => [c.email ?? "", c]));
     const contactId = (email: string) => contactByEmail.get(email)?.id;
 
-    // --- Deals (SO-001 from salesOrders.json becomes the TechNova deal) ------
+    // --- Deals ----------------------------------------------------------------
     const dealRows = await tx
       .insert(deals)
       .values([
@@ -277,7 +268,7 @@ async function seedCrmData(orgId: string, ownerId: string) {
           accountId: accountId("TechNova Pvt Ltd"),
           contactId: contactId("rahul.sharma@example.com"),
           name: "TechNova — CRM Subscription renewal",
-          amountCents: 500_000, // $5,000 — carried over from SO-001
+          amountCents: 500_000, // $5,000
           expectedCloseDate: daysOut(12),
           status: "open",
         },

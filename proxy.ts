@@ -1,16 +1,10 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 
-/**
- * Next.js 16 renamed `middleware` to `proxy`. Its runtime is Node.js and cannot
- * be configured. See node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md
- *
- * This is an **optimistic** check only: it looks for the presence of a session
- * cookie to avoid rendering the app shell for obviously-signed-out visitors.
- * It is not the authorization boundary — the cookie is not verified here.
- * Real enforcement lives in `requireOrgContext()` plus the Postgres RLS
- * policies, both of which run on every data access.
- */
+/** Next.js 16 renamed `middleware` to `proxy` (Node.js runtime, not configurable).
+ * This is an **optimistic** check only — looks for a session cookie without verifying
+ * it, to avoid rendering the shell for obviously-signed-out visitors. Real enforcement
+ * is `requireOrgContext()` + Postgres RLS, on every data access. */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSessionCookie = Boolean(getSessionCookie(request));

@@ -6,12 +6,7 @@ import { recordAudit } from "@/lib/audit";
 import { accounts, contacts, deals, leads, pipelines, stages } from "@/lib/db/schema";
 import { notify } from "@/lib/inngest/client";
 import { orgAction } from "@/lib/safe-action";
-import {
-  convertLeadSchema,
-  createLeadSchema,
-  deleteLeadSchema,
-  updateLeadSchema,
-} from "@/lib/validators/crm";
+import { convertLeadSchema, createLeadSchema, updateLeadSchema } from "@/lib/validators/crm";
 
 export const createLead = orgAction
   .metadata({ name: "leads.create" })
@@ -69,30 +64,6 @@ export const updateLead = orgAction
     revalidatePath("/leads");
     revalidatePath(`/leads/${id}`);
     return { id };
-  });
-
-export const deleteLead = orgAction
-  .metadata({ name: "leads.delete", requiredRole: "admin" })
-  .inputSchema(deleteLeadSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    await ctx.withTenant(async (tx) => {
-      const [before] = await tx.select().from(leads).where(eq(leads.id, parsedInput.id)).limit(1);
-      if (!before) throw new Error("NOT_FOUND");
-
-      await tx.delete(leads).where(eq(leads.id, parsedInput.id));
-
-      await recordAudit(tx, {
-        organizationId: ctx.organizationId,
-        actorId: ctx.userId,
-        action: "delete",
-        entityType: "lead",
-        entityId: parsedInput.id,
-        before,
-      });
-    });
-
-    revalidatePath("/leads");
-    return { id: parsedInput.id };
   });
 
 /**

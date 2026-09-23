@@ -1,13 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { scoreOutputSchema } from "@/lib/ai/scoring";
 
-/**
- * `scoreOutputSchema` is what `zodOutputFormat` builds the tool schema from
- * and what `response.parsed_output` is checked against — this is the
- * contract between "whatever Claude returns" and the rest of the app, so
- * its boundaries are worth pinning down directly rather than only through
- * a live model call.
- */
+/** The contract between "whatever Claude returns" and the rest of the app — worth
+ * pinning down directly rather than only through a live model call. */
 describe("scoreOutputSchema", () => {
   it("accepts a well-formed score", () => {
     const result = scoreOutputSchema.safeParse({

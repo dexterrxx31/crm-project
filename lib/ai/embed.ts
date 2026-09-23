@@ -5,14 +5,9 @@ import { tenantDb } from "@/lib/db/tenant";
 
 export type SubjectType = "account" | "contact" | "lead" | "deal" | "activity";
 
-/**
- * Replaces every stored embedding for one source record with a fresh one.
- *
- * Delete-then-insert rather than upsert-by-chunk: a record's embeddable text
- * can shrink from one chunk to zero (e.g. a description gets cleared), and
- * there's no natural chunk key to upsert against — the source id is the only
- * stable identity, so it owns the whole set of rows under it.
- */
+/** Replaces every stored embedding for one source record. Delete-then-insert rather than
+ * upsert-by-chunk: text can shrink to zero chunks, and there's no natural chunk key to
+ * upsert against — the source id is the only stable identity. */
 export async function embedAndStore(
   organizationId: string,
   sourceType: SubjectType,
@@ -78,13 +73,9 @@ function needsEmbedding(sourceType: SubjectType, idColumn: unknown, updatedAtCol
   )`;
 }
 
-/**
- * Re-embeds one record by fetching it fresh — used by the Inngest
- * "on-change" function (Phase 6 wires the trigger). Fetching fresh rather
- * than trusting text carried on the event avoids embedding a stale version
- * if the record changed again between enqueue and processing. No-ops
- * (deletes any existing embedding) if the record no longer exists.
- */
+/** Re-embeds one record by fetching it fresh (used by the Inngest on-change function) —
+ * avoids embedding a stale version if the record changed again before processing.
+ * No-ops (deletes any existing embedding) if the record no longer exists. */
 export async function embedSourceRecord(
   organizationId: string,
   sourceType: "account" | "contact" | "deal" | "activity",
@@ -118,14 +109,8 @@ export async function embedSourceRecord(
   await embedAndStore(organizationId, sourceType, sourceId, chunk ? [chunk] : []);
 }
 
-/**
- * Embeds every account, contact, deal and activity in the org that has no
- * embedding yet, or whose embedding predates its last edit.
- *
- * This is the manual/backfill path — Phase 6 wires an Inngest function that
- * calls the same per-record embedding on create/update so this becomes
- * incremental rather than a full sweep. Safe to re-run.
- */
+/** Embeds every record in the org with no embedding yet, or a stale one. The manual/backfill
+ * path — the Inngest on-change function keeps this incremental day to day. Safe to re-run. */
 export async function backfillEmbeddings(
   organizationId: string,
 ): Promise<{ accounts: number; contacts: number; deals: number; activities: number }> {

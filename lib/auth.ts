@@ -33,5 +33,3 @@ export const auth = betterAuth({
     nextCookies(),
   ],
 });
-
-export type Auth = typeof auth;

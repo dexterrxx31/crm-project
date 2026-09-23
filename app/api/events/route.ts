@@ -5,12 +5,8 @@ export const dynamic = "force-dynamic";
 
 const HEARTBEAT_MS = 25_000;
 
-/**
- * Long-lived SSE connection for realtime deal-board sync. Unlike the AI chat
- * routes (request-scoped: one turn, then the stream ends), this stays open
- * until the client disconnects — the deal board subscribes once per page
- * visit and expects a live feed for as long as it's mounted.
- */
+/** Long-lived SSE connection for realtime deal-board sync — unlike the request-scoped
+ * AI chat routes, this stays open until the client disconnects. */
 export async function GET(request: Request) {
   const context = await requireOrgContext().catch(() => null);
   if (!context) {

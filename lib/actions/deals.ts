@@ -1,9 +1,9 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
-import { deals, pipelines, stages } from "@/lib/db/schema";
+import { deals, stages } from "@/lib/db/schema";
 import type { TenantTx } from "@/lib/db/tenant";
 import { notify } from "@/lib/inngest/client";
 import { publishDealBoardEvent } from "@/lib/realtime";
@@ -11,7 +11,6 @@ import { orgAction } from "@/lib/safe-action";
 import {
   closeDealSchema,
   createDealSchema,
-  deleteDealSchema,
   moveDealSchema,
   updateDealSchema,
 } from "@/lib/validators/crm";
@@ -194,60 +193,3 @@ export const closeDeal = orgAction
     revalidatePath("/dashboard");
     return { id: parsedInput.id };
   });
-
-export const deleteDeal = orgAction
-  .metadata({ name: "deals.delete", requiredRole: "admin" })
-  .inputSchema(deleteDealSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    await ctx.withTenant(async (tx) => {
-      const [before] = await tx.select().from(deals).where(eq(deals.id, parsedInput.id)).limit(1);
-      if (!before) throw new Error("NOT_FOUND");
-
-      await tx.delete(deals).where(eq(deals.id, parsedInput.id));
-
-      await recordAudit(tx, {
-        organizationId: ctx.organizationId,
-        actorId: ctx.userId,
-        action: "delete",
-        entityType: "deal",
-        entityId: parsedInput.id,
-        before,
-      });
-    });
-
-    await publishDealBoardEvent(ctx.organizationId, {
-      type: "deal.deleted",
-      dealId: parsedInput.id,
-    });
-
-    revalidatePath("/deals");
-    revalidatePath("/dashboard");
-    return { id: parsedInput.id };
-  });
-
-/** The default pipeline's stages, used to render the board and the deal form. */
-export async function defaultPipelineStages(tx: TenantTx, organizationId: string) {
-  const [pipeline] = await tx
-    .select()
-    .from(pipelines)
-    .where(and(eq(pipelines.organizationId, organizationId), eq(pipelines.isDefault, true)))
-    .limit(1);
-
-  const target =
-    pipeline ??
-    (await tx
-      .select()
-      .from(pipelines)
-      .limit(1)
-      .then((rows) => rows[0] ?? null));
-
-  if (!target) return { pipeline: null, stages: [] as (typeof stages.$inferSelect)[] };
-
-  const stageRows = await tx
-    .select()
-    .from(stages)
-    .where(eq(stages.pipelineId, target.id))
-    .orderBy(stages.position);
-
-  return { pipeline: target, stages: stageRows };
-}

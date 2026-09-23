@@ -23,12 +23,9 @@ import {
   summarizeContactSchema,
 } from "@/lib/validators/ai-actions";
 
-/**
- * Explicit "do this AI thing now" buttons. Every action here is a thin
- * wrapper: validate input, call the corresponding lib/ai/* function, surface
- * a clean message for the two ways AI calls fail that aren't bugs — no key
- * configured, or the model declined.
- */
+/** Explicit "do this AI thing now" buttons — thin wrappers that validate input, call
+ * the matching lib/ai/* function, and surface a clean message for the two non-bug
+ * failure modes: no key configured, or the model declined. */
 function friendlyAiError(error: unknown): string {
   if (error instanceof AiNotConfiguredError) return error.message;
   if (error instanceof VoyageNotConfiguredError) return error.message;
@@ -117,7 +114,7 @@ export const draftEmailAction = orgAction
     }
   });
 
-/** Manual backfill trigger — Phase 6 replaces the manual button with an Inngest on-change hook. */
+/** Manual backfill trigger — a full-reindex escape hatch alongside the Inngest on-change hook. */
 export const backfillEmbeddingsAction = orgAction
   .metadata({ name: "ai.backfillEmbeddings" })
   .inputSchema(backfillEmbeddingsSchema)

@@ -19,17 +19,10 @@ import type { AgentEvent } from "@/lib/ai/agent";
 import { readSseEvents } from "@/lib/ai/sse-client";
 import { cn } from "@/lib/utils";
 
-/**
- * "Ask Synapse" — the CRM agent chat.
- *
- * Two parallel pieces of state, deliberately not the same thing:
- *  - `wireMessages` is the exact Anthropic-format transcript the server
- *    expects back on every request (see lib/ai/agent.ts) — built purely from
- *    "assistant-message" / "user-message" events, never hand-constructed.
- *  - `entries` is what's actually rendered — a friendlier shape (running
- *    text, tool-status lines, a confirmation card) folded from the same
- *    event stream.
- */
+/** "Ask Synapse" — the CRM agent chat. Two parallel state pieces: `wireMessages` is the
+ * exact transcript the server expects back (lib/ai/agent.ts), built only from
+ * assistant/user-message events; `entries` is the friendlier rendered shape, folded
+ * from the same event stream. */
 type Entry =
   | { kind: "user"; text: string }
   | { kind: "assistant"; text: string }
@@ -42,9 +35,13 @@ type Entry =
     }
   | { kind: "error"; text: string };
 
-export function AiChat() {
+export function AiChat({ onOpenChange }: { onOpenChange?: (open: boolean) => void } = {}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
+  function setOpen(next: boolean) {
+    setOpenState(next);
+    onOpenChange?.(next);
+  }
   const [entries, setEntries] = useState<Entry[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -110,8 +107,7 @@ export function AiChat() {
     for await (const event of readSseEvents<AgentEvent>(response)) {
       applyEvent(event);
     }
-    // A write mutated CRM data — refresh server components so the rest of
-    // the app (lists, detail pages) reflects it without a manual reload.
+    // A write may have mutated CRM data — refresh server components to reflect it.
     router.refresh();
   }
 
@@ -261,6 +257,9 @@ export function AiChat() {
               </div>
             ))}
 
+            <div aria-live="polite" className="sr-only">
+              {busy ? "Synapse is thinking…" : ""}
+            </div>
             {busy ? (
               <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden="true" />
             ) : null}
@@ -283,6 +282,7 @@ export function AiChat() {
                 sendMessage();
               }
             }}
+            aria-label="Message"
             placeholder="Ask about your pipeline…"
             rows={2}
             className="resize-none"

@@ -6,11 +6,7 @@ import { recordAudit } from "@/lib/audit";
 import { accounts } from "@/lib/db/schema";
 import { notify } from "@/lib/inngest/client";
 import { orgAction } from "@/lib/safe-action";
-import {
-  createAccountSchema,
-  deleteAccountSchema,
-  updateAccountSchema,
-} from "@/lib/validators/crm";
+import { createAccountSchema, updateAccountSchema } from "@/lib/validators/crm";
 
 export const createAccount = orgAction
   .metadata({ name: "accounts.create" })
@@ -78,32 +74,4 @@ export const updateAccount = orgAction
     revalidatePath("/accounts");
     revalidatePath(`/accounts/${id}`);
     return { id };
-  });
-
-export const deleteAccount = orgAction
-  .metadata({ name: "accounts.delete", requiredRole: "admin" })
-  .inputSchema(deleteAccountSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    await ctx.withTenant(async (tx) => {
-      const [before] = await tx
-        .select()
-        .from(accounts)
-        .where(eq(accounts.id, parsedInput.id))
-        .limit(1);
-      if (!before) throw new Error("NOT_FOUND");
-
-      await tx.delete(accounts).where(eq(accounts.id, parsedInput.id));
-
-      await recordAudit(tx, {
-        organizationId: ctx.organizationId,
-        actorId: ctx.userId,
-        action: "delete",
-        entityType: "account",
-        entityId: parsedInput.id,
-        before,
-      });
-    });
-
-    revalidatePath("/accounts");
-    return { id: parsedInput.id };
   });

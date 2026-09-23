@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,20 +22,32 @@ import { closeDeal } from "@/lib/actions/deals";
 export function CloseDealDialog({ dealId, outcome }: { dealId: string; outcome: "won" | "lost" }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const { execute, isPending } = useAction(closeDeal, {
+  const { execute, isPending, reset } = useAction(closeDeal, {
     onSuccess() {
       toast.success(outcome === "won" ? "Marked as won" : "Marked as lost");
+      setFormError(null);
       setOpen(false);
       router.refresh();
     },
     onError({ error }) {
-      toast.error(error.serverError ?? "Could not close this deal.");
+      setFormError(error.serverError ?? "Could not close this deal.");
     },
   });
 
+  // Shared by onOpenChange (Escape, backdrop click) and the Cancel button, so
+  // cancelling doesn't leave a stale error behind for the next time this opens.
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) {
+      setFormError(null);
+      reset();
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant={outcome === "won" ? "default" : "outline"}>
           {outcome === "won" ? "Mark won" : "Mark lost"}
@@ -62,6 +75,12 @@ export function CloseDealDialog({ dealId, outcome }: { dealId: string; outcome: 
             });
           }}
         >
+          {formError ? (
+            <Alert variant="destructive">
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
+          ) : null}
+
           {outcome === "lost" ? (
             <div className="grid gap-2">
               <Label htmlFor="lostReason">Reason</Label>
@@ -75,7 +94,7 @@ export function CloseDealDialog({ dealId, outcome }: { dealId: string; outcome: 
           ) : null}
 
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>

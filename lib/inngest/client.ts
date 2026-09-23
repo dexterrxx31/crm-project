@@ -1,17 +1,7 @@
 import { Inngest } from "inngest";
 
-/**
- * Event payloads the CRM emits. Each event's `data.organizationId` is what
- * every function in lib/inngest/functions/ uses to open its tenant-scoped
- * transaction — the same RLS boundary the rest of the app relies on, not a
- * separate trust model for background work.
- *
- * Not wired into the `Inngest` client generic — this SDK version's typed-event
- * story (event schemas passed to the client constructor) didn't resolve
- * cleanly against the installed version, so each function annotates its own
- * event payload from this type instead. Functional either way; only the
- * "mistyped event.data" compile-time check is what's missing.
- */
+/** Event payloads the CRM emits. `data.organizationId` is what each function in
+ * lib/inngest/functions/ uses to open its tenant-scoped (RLS) transaction. */
 export type Events = {
   "lead/scoring.requested": { data: { organizationId: string; leadId: string } };
   "deal/scoring.requested": { data: { organizationId: string; dealId: string } };
@@ -26,16 +16,9 @@ export type Events = {
 
 export const inngest = new Inngest({ id: "synapse-crm" });
 
-/**
- * Fire-and-forget event send, for calling from Server Actions.
- *
- * Local dev is two processes — `bun dev` and `bun run inngest:dev` — and
- * it's easy to only run the first. `inngest.send()` would then fail (no
- * dev server to receive it); embedding and scoring staying in sync is a
- * nice-to-have, not something that should ever break saving a contact. This
- * swallows that failure (logged, not thrown) rather than letting it
- * propagate into the calling action's result.
- */
+/** Fire-and-forget event send for Server Actions. Swallows failures (e.g. the Inngest
+ * dev server not running) — embedding/scoring staying in sync is a nice-to-have,
+ * never something that should break saving a record. */
 export async function notify<K extends keyof Events>(
   name: K,
   data: Events[K]["data"],

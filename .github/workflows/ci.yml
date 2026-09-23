@@ -5,10 +5,17 @@ on:
     branches: [main]
   pull_request:
 
+# Cancel a superseded run when new commits land on the same branch/PR.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least-privilege default — nothing in this workflow needs write access.
+permissions:
+  contents: read
+
 env:
-  # Owner and app roles for the throwaway CI database — see lib/db/migrate.ts
-  # for why migrations need DATABASE_ADMIN_URL and the app needs the
-  # non-superuser DATABASE_URL.
+  # Owner and app roles for the throwaway CI database — see lib/db/migrate.ts.
   DATABASE_URL: postgresql://synapse_app:synapse_app@localhost:5432/synapse
   DATABASE_ADMIN_URL: postgresql://synapse:synapse@localhost:5432/synapse
   BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else
@@ -57,14 +64,20 @@ jobs:
       - name: Unit tests (Vitest)
         run: bun run test
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock') }}
+
       - name: Install Playwright browsers
+        # No-op on the download itself when the cache above hit — still runs
+        # apt for OS-level deps, which aren't cacheable this way.
         run: bunx playwright install --with-deps chromium
 
       - name: E2E tests (Playwright)
-        # AI/rate-limit/observability env vars are deliberately left unset —
-        # every path they gate must degrade gracefully without them (see
-        # AGENTS.md), and the golden-path test asserts that degradation
-        # directly rather than requiring live third-party credentials in CI.
+        # AI/rate-limit/observability env vars are deliberately left unset — every
+        # path they gate must degrade gracefully without them (see AGENTS.md).
         run: bun run test:e2e
 
       - name: Upload Playwright report

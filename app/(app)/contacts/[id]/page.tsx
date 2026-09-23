@@ -43,7 +43,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
             <LogActivityDialog relatedType="contact" relatedId={contact.id} />
             <RecordFormDialog
               title="Edit contact"
-              trigger={<Button>Edit</Button>}
+              trigger={<Button variant="outline">Edit</Button>}
               fields={contactFields(options.accounts)}
               action={updateContact}
               hiddenValues={{ id: contact.id }}

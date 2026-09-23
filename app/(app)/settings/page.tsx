@@ -61,28 +61,32 @@ export default async function SettingsPage() {
             <CardTitle className="text-base">Members</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="font-medium">{row.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{row.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="capitalize">
-                        {row.role}
-                      </Badge>
-                    </TableCell>
+            {members.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No members yet.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {members.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="capitalize">
+                          {row.role}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
@@ -91,20 +95,26 @@ export default async function SettingsPage() {
             <CardTitle className="text-base">Pipeline stages</CardTitle>
           </CardHeader>
           <CardContent>
-            <ol className="flex flex-col gap-2">
-              {pipelineStages.map((stage) => (
-                <li
-                  key={stage.id}
-                  className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-                >
-                  <span>
-                    <span className="mr-2 text-muted-foreground">{stage.position}.</span>
-                    {stage.name}
-                  </span>
-                  <Badge variant="outline">{stage.probability}%</Badge>
-                </li>
-              ))}
-            </ol>
+            {pipelineStages.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No pipeline configured yet.
+              </p>
+            ) : (
+              <ol className="flex flex-col gap-2">
+                {pipelineStages.map((stage) => (
+                  <li
+                    key={stage.id}
+                    className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                  >
+                    <span>
+                      <span className="mr-2 text-muted-foreground">{stage.position}.</span>
+                      {stage.name}
+                    </span>
+                    <Badge variant="outline">{stage.probability}%</Badge>
+                  </li>
+                ))}
+              </ol>
+            )}
           </CardContent>
         </Card>
 

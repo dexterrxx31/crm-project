@@ -287,7 +287,7 @@ export async function listDeals(
 }
 
 /** Open deals grouped by stage, for the kanban board. */
-export async function dealBoard(organizationId: string) {
+export async function dealBoard(organizationId: string, q?: string) {
   return tenantDb(organizationId, async (tx) => {
     const [pipeline] = await tx
       .select()
@@ -304,6 +304,10 @@ export async function dealBoard(organizationId: string) {
       .where(eq(stages.pipelineId, target.id))
       .orderBy(asc(stages.position));
 
+    const filter = q
+      ? and(eq(deals.status, "open"), ilike(deals.name, likeTerm(q)))
+      : eq(deals.status, "open");
+
     const dealRows = await tx
       .select({
         id: deals.id,
@@ -315,7 +319,7 @@ export async function dealBoard(organizationId: string) {
       })
       .from(deals)
       .leftJoin(accounts, eq(deals.accountId, accounts.id))
-      .where(eq(deals.status, "open"))
+      .where(filter)
       .orderBy(desc(deals.amountCents));
 
     const dealsByStage: Record<string, BoardDeal[]> = {};

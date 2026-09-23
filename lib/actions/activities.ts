@@ -6,12 +6,7 @@ import { recordAudit } from "@/lib/audit";
 import { activities } from "@/lib/db/schema";
 import { notify } from "@/lib/inngest/client";
 import { orgAction } from "@/lib/safe-action";
-import {
-  createActivitySchema,
-  deleteActivitySchema,
-  toggleTaskSchema,
-  updateActivitySchema,
-} from "@/lib/validators/crm";
+import { createActivitySchema, toggleTaskSchema } from "@/lib/validators/crm";
 
 /** Detail routes that should refresh when a timeline entry changes. */
 function revalidateSubject(relatedType: string, relatedId: string) {
@@ -65,37 +60,6 @@ export const createActivity = orgAction
     return { id: activity.id };
   });
 
-export const updateActivity = orgAction
-  .metadata({ name: "activities.update" })
-  .inputSchema(updateActivitySchema)
-  .action(async ({ parsedInput, ctx }) => {
-    const { id, ...values } = parsedInput;
-
-    await ctx.withTenant(async (tx) => {
-      const [before] = await tx.select().from(activities).where(eq(activities.id, id)).limit(1);
-      if (!before) throw new Error("NOT_FOUND");
-
-      const [after] = await tx
-        .update(activities)
-        .set(values)
-        .where(eq(activities.id, id))
-        .returning();
-
-      await recordAudit(tx, {
-        organizationId: ctx.organizationId,
-        actorId: ctx.userId,
-        action: "update",
-        entityType: "activity",
-        entityId: id,
-        before,
-        after,
-      });
-    });
-
-    revalidateSubject(parsedInput.relatedType, parsedInput.relatedId);
-    return { id };
-  });
-
 /** Ticking a task off. Separate from update so the UI can fire it optimistically. */
 export const toggleTask = orgAction
   .metadata({ name: "activities.toggleTask" })
@@ -114,34 +78,4 @@ export const toggleTask = orgAction
     revalidateSubject(row.relatedType, row.relatedId);
     revalidatePath("/dashboard");
     return { id: row.id, completed: Boolean(row.completedAt) };
-  });
-
-export const deleteActivity = orgAction
-  .metadata({ name: "activities.delete" })
-  .inputSchema(deleteActivitySchema)
-  .action(async ({ parsedInput, ctx }) => {
-    const row = await ctx.withTenant(async (tx) => {
-      const [before] = await tx
-        .select()
-        .from(activities)
-        .where(eq(activities.id, parsedInput.id))
-        .limit(1);
-      if (!before) throw new Error("NOT_FOUND");
-
-      await tx.delete(activities).where(eq(activities.id, parsedInput.id));
-
-      await recordAudit(tx, {
-        organizationId: ctx.organizationId,
-        actorId: ctx.userId,
-        action: "delete",
-        entityType: "activity",
-        entityId: parsedInput.id,
-        before,
-      });
-
-      return before;
-    });
-
-    revalidateSubject(row.relatedType, row.relatedId);
-    return { id: parsedInput.id };
   });

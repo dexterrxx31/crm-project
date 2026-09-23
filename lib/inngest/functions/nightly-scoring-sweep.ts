@@ -8,17 +8,12 @@ import { inngest } from "@/lib/inngest/client";
 const MAX_PER_ORG = 100;
 
 /**
- * Once a day, re-scores every open lead and open deal across every
- * organization — catches drift that no single edit would trigger (a lead
- * going stale, a deal's expected close date quietly passing). Fans out via
- * `step.sendEvent` into the same per-record events the on-change path uses
- * (score-lead.ts, score-deal.ts), rather than scoring inline, so one org's
- * large backlog can't block another's and a partial failure only loses that
- * one record's rescore, not the whole sweep.
- *
- * `organization` has no RLS (it's the tenant table itself, not tenant data),
- * so listing orgs goes through the plain `db` client. Everything under an
- * org is read through `tenantDb`, same as every other tenant-scoped query.
+ * Once a day, re-scores every open lead/deal across every org — catches drift no
+ * single edit would trigger. Fans out via `step.sendEvent` into the same per-record
+ * events the on-change path uses, rather than scoring inline, so one org's backlog
+ * can't block another's. `organization` has no RLS (it's the tenant table itself), so
+ * listing orgs uses the plain `db` client; everything under an org still goes through
+ * `tenantDb`.
  */
 export const nightlyScoringSweep = inngest.createFunction(
   { id: "nightly-scoring-sweep", retries: 1, triggers: [{ cron: "0 13 * * *" }] },
