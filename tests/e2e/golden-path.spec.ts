@@ -53,27 +53,24 @@ test("signup → account → contact → deal → move stage → ask the agent",
   await expect(card).toBeVisible();
 
   // --- Move stage: drag the card from Qualification into Discovery -------
+  // Driven by keyboard (Tab-focus, Space to pick up, arrows to move, Space to
+  // drop) rather than simulated mouse movement — the pointer-based drag this
+  // used before was flaky in CI's headless Chromium (different hit-testing
+  // timing than a local run), where boundingBox()-chasing mouse.move() calls
+  // don't reliably clear dnd-kit's PointerSensor activation distance. The
+  // keyboard path exercises the same moveDeal Server Action and is exactly
+  // what components/crm/deal-board.tsx's KeyboardSensor exists to support.
   const qualification = page.locator('section[aria-label="Qualification"]');
   const discovery = page.locator('section[aria-label="Discovery"]');
-  await expect(card).toBeVisible();
   await expect(qualification.getByText("Rocket Skates Renewal")).toBeVisible();
 
-  const cardBox = await card.boundingBox();
-  const targetBox = await discovery.boundingBox();
-  if (!cardBox || !targetBox) throw new Error("Could not measure drag source/target");
-
-  await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
-  await page.mouse.down();
-  // dnd-kit's PointerSensor needs to see movement past its activation
-  // distance before it starts tracking the drag — a few small steps first,
-  // then the real move to the target column.
-  await page.mouse.move(cardBox.x + cardBox.width / 2 + 15, cardBox.y + cardBox.height / 2, {
-    steps: 5,
-  });
-  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, {
-    steps: 15,
-  });
-  await page.mouse.up();
+  const draggableCard = page.getByRole("button", { name: /Rocket Skates Renewal/ });
+  await draggableCard.click();
+  await page.keyboard.press("Space");
+  await page.keyboard.press("ArrowRight", { delay: 50 });
+  await page.keyboard.press("ArrowRight", { delay: 50 });
+  await page.keyboard.press("ArrowRight", { delay: 50 });
+  await page.keyboard.press("Space");
 
   await expect(discovery.getByText("Rocket Skates Renewal")).toBeVisible();
   await expect(qualification.getByText("Rocket Skates Renewal")).toHaveCount(0);
