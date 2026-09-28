@@ -19,7 +19,12 @@ export function sseResponse(run: (emit: (event: unknown) => void) => Promise<voi
       try {
         await run(emit);
       } catch (error) {
-        emit({ type: "error", message: error instanceof Error ? error.message : "Unknown error" });
+        // `run` re-throws only errors its own callers didn't already turn into a
+        // clean, user-safe message — so this is always an unexpected failure.
+        // Logging it (never surfaced before) and keeping the raw message server-side
+        // avoids leaking internals (query text, stack frames) into the browser.
+        console.error("[sse] unhandled error in stream", error);
+        emit({ type: "error", message: "Something went wrong. Please try again." });
       } finally {
         closed = true;
         controller.close();

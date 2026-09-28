@@ -7,8 +7,19 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { member, organization, pipelines, stages, user } from "@/lib/db/schema";
 import { tenantDb } from "@/lib/db/tenant";
+import { checkAuthRateLimit } from "@/lib/rate-limit";
 import { actionClient } from "@/lib/safe-action";
 import { signInSchema, signUpSchema } from "@/lib/validators/auth";
+
+/** Server Actions have no client IP of their own — this is the standard proxy header
+ * Vercel (and most reverse proxies) set, first entry if the request hopped through more
+ * than one. Falls back to a shared bucket rather than skipping the rate limit entirely. */
+async function requestIp(): Promise<string> {
+  const headerList = await headers();
+  const forwarded = headerList.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return headerList.get("x-real-ip") ?? "unknown";
+}
 
 /** Stage template applied to every new organization. */
 const DEFAULT_STAGES = [
@@ -49,6 +60,14 @@ export const signUpAction = actionClient
   .inputSchema(signUpSchema)
   .action(async ({ parsedInput }) => {
     const { name, email, password, organizationName } = parsedInput;
+
+    const rateLimit = await checkAuthRateLimit(await requestIp());
+    if (!rateLimit.success) {
+      return {
+        ok: false as const,
+        message: "Too many attempts. Please wait a moment and try again.",
+      };
+    }
 
     const existing = await db
       .select({ id: user.id })
@@ -111,6 +130,14 @@ export const signInAction = actionClient
   .metadata({ name: "auth.signIn" })
   .inputSchema(signInSchema)
   .action(async ({ parsedInput }) => {
+    const rateLimit = await checkAuthRateLimit(await requestIp());
+    if (!rateLimit.success) {
+      return {
+        ok: false as const,
+        message: "Too many attempts. Please wait a moment and try again.",
+      };
+    }
+
     try {
       await auth.api.signInEmail({
         body: { email: parsedInput.email, password: parsedInput.password },

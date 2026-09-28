@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   bigint,
   boolean,
@@ -467,7 +467,3 @@ export type Pipeline = typeof pipelines.$inferSelect;
 export type Stage = typeof stages.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
-
-/** Raw SQL helper used by the withOrg wrapper to scope a transaction. */
-export const setCurrentOrg = (organizationId: string) =>
-  sql`select set_config('app.current_organization_id', ${organizationId}, true)`;
