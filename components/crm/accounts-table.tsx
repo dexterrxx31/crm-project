@@ -1,9 +1,8 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
-import { DataTable } from "@/components/crm/data-table";
+import { DataTable, type DataTableColumnDef } from "@/components/crm/data-table";
 import { formatCurrency } from "@/lib/format";
 
 export type AccountRow = {
@@ -19,7 +18,7 @@ export type AccountRow = {
 export function AccountsTable({ rows }: { rows: AccountRow[] }) {
   const router = useRouter();
 
-  const columns = useMemo<ColumnDef<AccountRow, unknown>[]>(
+  const columns = useMemo<DataTableColumnDef<AccountRow>[]>(
     () => [
       {
         accessorKey: "name",

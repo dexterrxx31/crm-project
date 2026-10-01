@@ -1,9 +1,8 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
-import { DataTable } from "@/components/crm/data-table";
+import { DataTable, type DataTableColumnDef } from "@/components/crm/data-table";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/format";
 
@@ -22,7 +21,7 @@ const STATUS_VARIANT = { open: "secondary", won: "default", lost: "outline" } as
 export function DealsTable({ rows }: { rows: DealRow[] }) {
   const router = useRouter();
 
-  const columns = useMemo<ColumnDef<DealRow, unknown>[]>(
+  const columns = useMemo<DataTableColumnDef<DealRow>[]>(
     () => [
       {
         accessorKey: "name",

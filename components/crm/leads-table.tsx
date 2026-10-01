@@ -1,10 +1,9 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { ConvertLeadDialog } from "@/components/crm/convert-lead-dialog";
-import { DataTable } from "@/components/crm/data-table";
+import { DataTable, type DataTableColumnDef } from "@/components/crm/data-table";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/format";
 
@@ -29,7 +28,7 @@ const STATUS_VARIANT = {
 
 export function LeadsTable({ rows }: { rows: LeadRow[] }) {
   const router = useRouter();
-  const columns = useMemo<ColumnDef<LeadRow, unknown>[]>(
+  const columns = useMemo<DataTableColumnDef<LeadRow>[]>(
     () => [
       {
         id: "name",

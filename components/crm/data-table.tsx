@@ -2,11 +2,13 @@
 
 import {
   type ColumnDef,
+  createSortedRowModel,
   flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
+  type RowData,
+  rowSortingFeature,
   type SortingState,
-  useReactTable,
+  tableFeatures,
+  useTable,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
@@ -20,29 +22,41 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
+/** The only feature this app's tables use. Column defs elsewhere key off
+ * `DataTableColumnDef` so they don't each need to know about this object. */
+const dataTableFeatures = tableFeatures({
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+});
+
+export type DataTableColumnDef<TData extends RowData, TValue = unknown> = ColumnDef<
+  typeof dataTableFeatures,
+  TData,
+  TValue
+>;
+
 /** Thin wrapper over TanStack Table. Sorting is client-side over the current page;
  * searching/pagination are server-side (nuqs-backed toolbar) since a CRM table can
  * outgrow what's sensible to ship to the browser. */
-export function DataTable<TData>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   onRowClick,
   emptyMessage = "Nothing here yet.",
 }: {
-  columns: ColumnDef<TData, unknown>[];
+  columns: DataTableColumnDef<TData>[];
   data: TData[];
   onRowClick?: (row: TData) => void;
   emptyMessage?: string;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: dataTableFeatures,
     data,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
   });
 
   return (
@@ -108,7 +122,7 @@ export function DataTable<TData>({
                 }
                 className={cn(onRowClick && "cursor-pointer")}
               >
-                {row.getVisibleCells().map((cell) => (
+                {row.getAllCells().map((cell) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>

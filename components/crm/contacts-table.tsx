@@ -1,10 +1,9 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
-import { DataTable } from "@/components/crm/data-table";
+import { DataTable, type DataTableColumnDef } from "@/components/crm/data-table";
 import { Badge } from "@/components/ui/badge";
 
 export type ContactRow = {
@@ -28,7 +27,7 @@ const STATUS_VARIANT = {
 export function ContactsTable({ rows }: { rows: ContactRow[] }) {
   const router = useRouter();
 
-  const columns = useMemo<ColumnDef<ContactRow, unknown>[]>(
+  const columns = useMemo<DataTableColumnDef<ContactRow>[]>(
     () => [
       {
         id: "name",
