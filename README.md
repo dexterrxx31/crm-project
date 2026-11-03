@@ -79,8 +79,9 @@ That lasts until the Colima VM restarts. For a fix that survives restarts, run
 ### Background jobs (Inngest)
 
 Lead/deal scoring, search indexing, and a nightly re-scoring sweep all run as background jobs
-through Inngest, rather than making a page wait on them. Locally that means running a second
-process alongside `bun dev`:
+through Inngest, rather than making a page wait on them. The manual scoring and search-index
+buttons queue jobs too. Refresh the record page after scoring finishes to see the new insight.
+Locally that means running a second process alongside `bun dev`:
 
 ```bash
 bun run inngest:dev            # http://localhost:8288 — a dashboard for local background jobs

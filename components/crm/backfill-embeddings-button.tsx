@@ -15,9 +15,7 @@ export function BackfillEmbeddingsButton() {
         toast.error(data?.message ?? "Could not update the search index.");
         return;
       }
-      const total =
-        data.counts.accounts + data.counts.contacts + data.counts.deals + data.counts.activities;
-      toast.success(total === 0 ? "Search index already up to date." : `Indexed ${total} records.`);
+      toast.success("Search indexing queued. Results will appear after processing.");
     },
     onError({ error }) {
       toast.error(error.serverError ?? "Could not update the search index.");
@@ -27,7 +25,7 @@ export function BackfillEmbeddingsButton() {
   return (
     <Button variant="outline" className="gap-2" disabled={isPending} onClick={() => execute({})}>
       <Sparkles className="size-4" aria-hidden="true" />
-      {isPending ? "Indexing…" : "Rebuild search index"}
+      {isPending ? "Queueing..." : "Rebuild search index"}
     </Button>
   );
 }

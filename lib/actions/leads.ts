@@ -79,7 +79,12 @@ export const convertLead = orgAction
   .inputSchema(convertLeadSchema)
   .action(async ({ parsedInput, ctx }) => {
     const result = await ctx.withTenant(async (tx) => {
-      const [lead] = await tx.select().from(leads).where(eq(leads.id, parsedInput.id)).limit(1);
+      const [lead] = await tx
+        .select()
+        .from(leads)
+        .where(eq(leads.id, parsedInput.id))
+        .limit(1)
+        .for("update");
       if (!lead) throw new Error("NOT_FOUND");
       if (lead.status === "converted") throw new Error("ALREADY_CONVERTED");
 

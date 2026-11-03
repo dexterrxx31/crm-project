@@ -1,5 +1,6 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/lib/inngest/client";
+import { backfillEmbeddingsOnRequest } from "@/lib/inngest/functions/backfill-embeddings";
 import { embedSourceOnChange } from "@/lib/inngest/functions/embed-source";
 import { nightlyScoringSweep } from "@/lib/inngest/functions/nightly-scoring-sweep";
 import { scoreDealOnRequest } from "@/lib/inngest/functions/score-deal";
@@ -12,5 +13,11 @@ import { scoreLeadOnRequest } from "@/lib/inngest/functions/score-lead";
  */
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [scoreLeadOnRequest, scoreDealOnRequest, embedSourceOnChange, nightlyScoringSweep],
+  functions: [
+    scoreLeadOnRequest,
+    scoreDealOnRequest,
+    embedSourceOnChange,
+    nightlyScoringSweep,
+    backfillEmbeddingsOnRequest,
+  ],
 });

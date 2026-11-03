@@ -37,6 +37,17 @@ const amountToCents = z.preprocess(
   z.number().int().min(0, "Amount cannot be negative"),
 );
 
+/** Updates distinguish an explicitly cleared field from an omitted field. */
+function clearable<T extends z.ZodType>(schema: T, noneIsEmpty = false) {
+  return z.preprocess(
+    (value) =>
+      (typeof value === "string" && value.trim() === "") || (noneIsEmpty && value === "none")
+        ? null
+        : value,
+    schema.nullable(),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Accounts
 // ---------------------------------------------------------------------------
@@ -55,7 +66,15 @@ export const accountInputSchema = z.object({
 });
 
 export const createAccountSchema = accountInputSchema;
-export const updateAccountSchema = accountInputSchema.extend({ id: uuid });
+export const updateAccountSchema = accountInputSchema.extend({
+  id: uuid,
+  domain: clearable(accountInputSchema.shape.domain),
+  industry: clearable(accountInputSchema.shape.industry),
+  website: clearable(accountInputSchema.shape.website),
+  phone: clearable(accountInputSchema.shape.phone),
+  employeeCount: clearable(accountInputSchema.shape.employeeCount),
+  description: clearable(accountInputSchema.shape.description),
+});
 
 // ---------------------------------------------------------------------------
 // Contacts
@@ -75,7 +94,13 @@ export const contactInputSchema = z.object({
 });
 
 export const createContactSchema = contactInputSchema;
-export const updateContactSchema = contactInputSchema.extend({ id: uuid });
+export const updateContactSchema = contactInputSchema.extend({
+  id: uuid,
+  email: clearable(contactInputSchema.shape.email),
+  phone: clearable(contactInputSchema.shape.phone),
+  title: clearable(contactInputSchema.shape.title),
+  accountId: clearable(contactInputSchema.shape.accountId, true),
+});
 
 // ---------------------------------------------------------------------------
 // Leads
@@ -93,7 +118,14 @@ export const leadInputSchema = z.object({
 });
 
 export const createLeadSchema = leadInputSchema;
-export const updateLeadSchema = leadInputSchema.extend({ id: uuid });
+export const updateLeadSchema = leadInputSchema.extend({
+  id: uuid,
+  email: clearable(leadInputSchema.shape.email),
+  phone: clearable(leadInputSchema.shape.phone),
+  company: clearable(leadInputSchema.shape.company),
+  title: clearable(leadInputSchema.shape.title),
+  source: clearable(leadInputSchema.shape.source),
+});
 
 /** Lead → account + contact (+ optional deal). */
 export const convertLeadSchema = z.object({
@@ -127,7 +159,12 @@ export const dealInputSchema = z.object({
 });
 
 export const createDealSchema = dealInputSchema;
-export const updateDealSchema = dealInputSchema.extend({ id: uuid });
+export const updateDealSchema = dealInputSchema.extend({
+  id: uuid,
+  accountId: clearable(dealInputSchema.shape.accountId, true),
+  contactId: clearable(dealInputSchema.shape.contactId, true),
+  expectedCloseDate: clearable(dealInputSchema.shape.expectedCloseDate),
+});
 
 /** Used by the kanban board's drag handler. */
 export const moveDealSchema = z.object({

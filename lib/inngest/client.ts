@@ -3,6 +3,7 @@ import { Inngest } from "inngest";
 /** Event payloads the CRM emits. `data.organizationId` is what each function in
  * lib/inngest/functions/ uses to open its tenant-scoped (RLS) transaction. */
 export type Events = {
+  "embedding/backfill.requested": { data: { organizationId: string } };
   "lead/scoring.requested": { data: { organizationId: string; leadId: string } };
   "deal/scoring.requested": { data: { organizationId: string; dealId: string } };
   "embedding/source.changed": {

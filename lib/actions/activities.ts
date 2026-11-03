@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
+import { requireTenantRecord } from "@/lib/db/references";
 import { activities } from "@/lib/db/schema";
 import { notify } from "@/lib/inngest/client";
 import { orgAction } from "@/lib/safe-action";
@@ -32,6 +33,7 @@ export const createActivity = orgAction
   .inputSchema(createActivitySchema)
   .action(async ({ parsedInput, ctx }) => {
     const activity = await ctx.withTenant(async (tx) => {
+      await requireTenantRecord(tx, parsedInput.relatedType, parsedInput.relatedId);
       const [row] = await tx
         .insert(activities)
         .values({ ...parsedInput, organizationId: ctx.organizationId, ownerId: ctx.userId })

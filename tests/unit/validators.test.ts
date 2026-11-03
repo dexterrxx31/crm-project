@@ -7,6 +7,10 @@ import {
   convertLeadSchema,
   dealInputSchema,
   moveDealSchema,
+  updateAccountSchema,
+  updateContactSchema,
+  updateDealSchema,
+  updateLeadSchema,
 } from "@/lib/validators/crm";
 
 describe("accountInputSchema", () => {
@@ -165,5 +169,47 @@ describe("activityInputSchema", () => {
       relatedId: "3fbf1e6a-0000-4000-8000-000000000000",
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("clearing optional fields in updates", () => {
+  const id = "3fbf1e6a-0000-4000-8000-000000000000";
+
+  it("clears account text and employee count while leaving omitted values unset", () => {
+    const result = updateAccountSchema.parse({ id, name: "Acme", domain: "  ", employeeCount: "" });
+    expect(result.domain).toBeNull();
+    expect(result.employeeCount).toBeNull();
+    expect(result.phone).toBeUndefined();
+  });
+
+  it("clears contact email and account without weakening validation", () => {
+    const input = { id, firstName: "Ada", lastName: "Lovelace", email: "", accountId: "none" };
+    const result = updateContactSchema.parse(input);
+    expect(result.email).toBeNull();
+    expect(result.accountId).toBeNull();
+    expect(updateContactSchema.safeParse({ ...input, email: "bad-email" }).success).toBe(false);
+    expect(updateContactSchema.safeParse({ ...input, accountId: "bad-id" }).success).toBe(false);
+  });
+
+  it("clears lead company while preserving literal text", () => {
+    const input = { id, firstName: "Ada", lastName: "Lovelace", company: "" };
+    expect(updateLeadSchema.parse(input).company).toBeNull();
+    expect(updateLeadSchema.parse({ ...input, company: "none" }).company).toBe("none");
+  });
+
+  it("clears deal relationships and date", () => {
+    const result = updateDealSchema.parse({
+      id,
+      name: "Deal",
+      stageId: id,
+      amount: "5",
+      accountId: "none",
+      contactId: "",
+      expectedCloseDate: "",
+    });
+    expect(result.accountId).toBeNull();
+    expect(result.contactId).toBeNull();
+    expect(result.expectedCloseDate).toBeNull();
+    expect(result.amount).toBe(500);
   });
 });

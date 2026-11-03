@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
+import { requireTenantRecord } from "@/lib/db/references";
 import { deals, stages } from "@/lib/db/schema";
 import type { TenantTx } from "@/lib/db/tenant";
 import { notify } from "@/lib/inngest/client";
@@ -35,6 +36,8 @@ export const createDeal = orgAction
     const { amount, ...rest } = parsedInput;
 
     const deal = await ctx.withTenant(async (tx) => {
+      await requireTenantRecord(tx, "account", rest.accountId);
+      await requireTenantRecord(tx, "contact", rest.contactId);
       const pipelineId = await pipelineForStage(tx, rest.stageId);
 
       const [row] = await tx
@@ -82,6 +85,8 @@ export const updateDeal = orgAction
       const [before] = await tx.select().from(deals).where(eq(deals.id, id)).limit(1);
       if (!before) throw new Error("NOT_FOUND");
 
+      await requireTenantRecord(tx, "account", rest.accountId);
+      await requireTenantRecord(tx, "contact", rest.contactId);
       const pipelineId = await pipelineForStage(tx, rest.stageId);
 
       const [after] = await tx

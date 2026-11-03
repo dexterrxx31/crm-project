@@ -43,7 +43,7 @@ function Shell({
           {title}
         </CardTitle>
         <Button variant="ghost" size="sm" disabled={isPending} onClick={onRefresh}>
-          {isPending ? "Scoring…" : insight ? "Refresh" : "Score now"}
+          {isPending ? "Queueing..." : insight ? "Refresh" : "Score now"}
         </Button>
       </CardHeader>
       <CardContent>
@@ -78,8 +78,10 @@ function LeadInsightCard({ leadId, insight }: { leadId: string; insight: Insight
   const router = useRouter();
   const { execute, isPending } = useAction(scoreLeadAction, {
     onSuccess({ data }) {
-      if (data?.ok) router.refresh();
-      else toast.error(data?.message ?? "Could not score this lead.");
+      if (data?.ok) {
+        toast.success("Scoring queued. Refresh this page after processing to see the result.");
+        router.refresh();
+      } else toast.error(data?.message ?? "Could not score this lead.");
     },
     onError({ error }) {
       toast.error(error.serverError ?? "Could not score this lead.");
@@ -100,8 +102,10 @@ function DealInsightCard({ dealId, insight }: { dealId: string; insight: Insight
   const router = useRouter();
   const { execute, isPending } = useAction(scoreDealAction, {
     onSuccess({ data }) {
-      if (data?.ok) router.refresh();
-      else toast.error(data?.message ?? "Could not score this deal.");
+      if (data?.ok) {
+        toast.success("Scoring queued. Refresh this page after processing to see the result.");
+        router.refresh();
+      } else toast.error(data?.message ?? "Could not score this deal.");
     },
     onError({ error }) {
       toast.error(error.serverError ?? "Could not score this deal.");

@@ -1,4 +1,5 @@
 import { scoreDealHealth } from "@/lib/ai/scoring";
+import { hasAnthropicKey } from "@/lib/env";
 import { type Events, inngest } from "@/lib/inngest/client";
 
 /** Scores deal health in the background. Same trigger wiring as score-lead.ts:
@@ -6,6 +7,7 @@ import { type Events, inngest } from "@/lib/inngest/client";
 export const scoreDealOnRequest = inngest.createFunction(
   { id: "score-deal-on-request", triggers: [{ event: "deal/scoring.requested" }] },
   async ({ event, step }) => {
+    if (!hasAnthropicKey()) return { skipped: true };
     const { organizationId, dealId } = event.data as Events["deal/scoring.requested"]["data"];
     return step.run("score-deal", () => scoreDealHealth(organizationId, dealId));
   },

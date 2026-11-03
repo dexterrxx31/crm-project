@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
+import { requireTenantRecord } from "@/lib/db/references";
 import { contacts } from "@/lib/db/schema";
 import { notify } from "@/lib/inngest/client";
 import { orgAction } from "@/lib/safe-action";
@@ -13,6 +14,7 @@ export const createContact = orgAction
   .inputSchema(createContactSchema)
   .action(async ({ parsedInput, ctx }) => {
     const contact = await ctx.withTenant(async (tx) => {
+      await requireTenantRecord(tx, "account", parsedInput.accountId);
       const [row] = await tx
         .insert(contacts)
         .values({ ...parsedInput, organizationId: ctx.organizationId, ownerId: ctx.userId })
@@ -49,6 +51,7 @@ export const updateContact = orgAction
     await ctx.withTenant(async (tx) => {
       const [before] = await tx.select().from(contacts).where(eq(contacts.id, id)).limit(1);
       if (!before) throw new Error("NOT_FOUND");
+      await requireTenantRecord(tx, "account", values.accountId);
 
       const [after] = await tx.update(contacts).set(values).where(eq(contacts.id, id)).returning();
 

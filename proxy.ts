@@ -18,10 +18,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (hasSessionCookie && isAuthRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
+  // A cookie can outlive its session. Keep auth routes reachable for recovery.
   return NextResponse.next();
 }
 

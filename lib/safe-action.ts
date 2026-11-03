@@ -2,6 +2,7 @@ import { createSafeActionClient, DEFAULT_SERVER_ERROR_MESSAGE } from "next-safe-
 import { z } from "zod";
 import { type OrgContext, type OrgRole, requireOrgContext, roleAtLeast } from "@/lib/auth-context";
 import { type TenantTx, tenantDb } from "@/lib/db/tenant";
+import { checkAiRateLimit } from "@/lib/rate-limit";
 
 /**
  * Base client. Server errors are logged in full but returned to the browser as
@@ -21,6 +22,9 @@ export const actionClient = createSafeActionClient({
 
     if (error.message === "UNAUTHORIZED") return "You are not signed in.";
     if (error.message === "FORBIDDEN") return "You do not have permission to do that.";
+    if (error.message === "AI_RATE_LIMITED") {
+      return "Too many requests. Please wait a moment and try again.";
+    }
 
     return DEFAULT_SERVER_ERROR_MESSAGE;
   },
@@ -52,4 +56,10 @@ export const orgAction = actionClient.use(async ({ next, metadata }) => {
   };
 
   return next({ ctx });
+});
+
+export const aiAction = orgAction.use(async ({ next, ctx }) => {
+  const limit = await checkAiRateLimit(ctx.organizationId);
+  if (!limit.success) throw new Error("AI_RATE_LIMITED");
+  return next();
 });
